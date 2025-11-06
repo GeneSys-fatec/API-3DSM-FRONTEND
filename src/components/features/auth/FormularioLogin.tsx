@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { login } from "./authService";
 import { useAuth } from "@/context/AuthContext";
+import ModalRecuperacaoSenha from "../profile/ModalRecuperacaoSenha";
 
 interface LoginState {
   usuEmail: string;
@@ -13,6 +14,7 @@ const FormularioLogin = () => {
   const navigate = useNavigate();
   const { logarUsuario } = useAuth();
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarModalRecuperacao, setMostrarModalRecuperacao] = useState(false);
   const [erros, setErros] = useState<{ [campo: string]: string }>({});
   const [state, setState] = useState<LoginState>({ usuEmail: "", usuSenha: "" });
 
@@ -81,7 +83,7 @@ const FormularioLogin = () => {
 
       <div className="w-full md:w-120 h-auto md:h-120 flex flex-col items-center justify-center md:bg-gray-200 md:shadow-md md:rounded-s-sm p-6 z-0">
         <h1 className="font-medium text-xl md:text-2xl pb-8">Login</h1>
-        <form className="w-full flex flex-col items-center gap-6 md:gap-4" onSubmit={handleSubmit}>
+        <form className="w-full flex flex-col items-center gap-4 md:gap-4" onSubmit={handleSubmit}>
           <div className="relative w-full max-w-xs">
             <div className="relative">
               <i className="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -109,8 +111,12 @@ const FormularioLogin = () => {
               />
               <i onClick={toggleMostrarSenha} className={`fa-solid ${mostrarSenha ? "fa-eye-slash" : "fa-eye"} absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer`}></i>
             </div>
+            <div className="w-full max-w-xs pt-1">
+              <button type="button" onClick={() => setMostrarModalRecuperacao(true)} className="text-sm hover:text-blue-900 cursor-pointer">
+                Esqueci minha senha?
+              </button>
+            </div>
           </div>
-
           <button type="submit" className="w-full max-w-xs bg-indigo-950 text-white rounded-sm outline-none cursor-pointer p-2 m-2">
             Login
           </button>
@@ -131,6 +137,9 @@ const FormularioLogin = () => {
         </p>
         <img src="./Login.png" className="w-60 md:w-110 pt-3 img-fluid" />
       </div>
+      {mostrarModalRecuperacao && (
+        <ModalRecuperacaoSenha onClose={() => setMostrarModalRecuperacao(false)}/>
+      )}
     </div>
   );
 }
