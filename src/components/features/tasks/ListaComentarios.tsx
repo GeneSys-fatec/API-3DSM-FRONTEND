@@ -146,16 +146,49 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
 
     const renderComentario = (comentario: Comentario & { replies?: Comentario[] }, nivel = 0) => (
         <li key={comentario.comId} className={`flex flex-col w-full gap-2 text-sm ${nivel > 0 ? 'pl-8 border-l border-gray-200' : ''}`}>
-            <div className="flex items-start gap-3 overflow-hidden">
+            <div className="flex items-start gap-3">
                 <div className="bg-gray-300 rounded-full items-center justify-center font-bold text-gray-600 py-2 px-3">
                     {comentario.usuNome.charAt(0)?.toUpperCase()}
                 </div>
-                <div className="flex flex-col flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-                        <p className="font-semibold leading-none">{comentario.usuNome}</p>
-                        <p className="text-xs text-gray-500">
-                            {new Date(comentario.comDataAtualizacao).toLocaleDateString('pt-BR')}
-                        </p>
+
+                <div className="flex flex-col flex-1 w-0 min-w-64">
+                    <div className="flex justify-between items-start">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                            <p className="font-semibold leading-none">{comentario.usuNome}</p>
+                            <p className="text-xs text-gray-500">
+                                {new Date(comentario.comDataAtualizacao).toLocaleDateString('pt-BR')}
+                            </p>
+                        </div>
+
+                        <div className="flex-shrink-0">
+                            <i role="button" aria-label="Mais opções" title="Mais opções" tabIndex={0}
+                                onClick={(e) => optionsMenu.open(e, comentario.comId)}
+                                className={`fa-solid fa-ellipsis-vertical cursor-pointer p-2 rounded-full flex-shrink-0 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400`} />
+                            {optionsMenu.isOpen && optionsMenu.selectedId === comentario.comId && optionsMenu.position && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); optionsMenu.close(); }}></div>
+                                    <div className="fixed z-50 bg-white border border-slate-200 rounded-md shadow-lg w-44 p-2"
+                                        style={{
+                                            top: optionsMenu.position.top,
+                                            left: optionsMenu.position.left,
+                                            transform: "translate(-100%, 12px)",
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <button type="button" onClick={() => { setComentarioEditandoId(comentario.comId); setNovoTextoComentario(comentario.comMensagem); optionsMenu.close() }}
+                                            className="w-full text-left px-3 py-2 rounded hover:bg-slate-100 flex items-center gap-2">
+                                            <i className="fa-solid fa-pen text-slate-600"></i>
+                                            <span>Editar</span>
+                                        </button>
+                                        <button type="button" onClick={() => confirmarExclusao(comentario.comId)}
+                                            className="w-full text-left px-3 py-2 rounded hover:bg-red-50 text-red-700 flex items-center gap-2 disabled:opacity-60">
+                                            <i className="fa-solid fa-trash"></i>
+                                            <span>Excluir</span>
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
 
                     {comentarioEditandoId === comentario.comId ? (
@@ -175,7 +208,7 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
                             </div>
                         </div>
                     ) : (
-                        <p>{comentario.comMensagem}</p>
+                        <p className="break-words">{comentario.comMensagem}</p>
                     )}
 
                     {!comentarioRespondendoId && (
@@ -201,15 +234,13 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
                                 <button
                                     type="button"
                                     onClick={() => { setComentarioRespondendoId(null); setNovaResposta("") }}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
-                                >
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
                                     Cancelar
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => adicionarResposta(comentario.comId)}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                                >
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
                                     Salvar
                                 </button>
                             </div>
@@ -279,9 +310,12 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
                     />
                     <button type="button" onClick={adicionarComentario} className="self-end px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Enviar</button>
                 </div>
-                <ul className="flex flex-col gap-8 overflow-x-hidden">
-                    {comentarios.map(comentario => renderComentario(comentario))}
-                </ul>
+
+                <div className="overflow-x-auto overflow-y-hidden">
+                    <ul className="flex flex-col gap-8">
+                        {comentarios.map(comentario => renderComentario(comentario))}
+                    </ul>
+                </div>
             </div>
             {mostrarConfirmacao && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
