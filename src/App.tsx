@@ -14,6 +14,7 @@ import { ModalProvider } from "./context/ModalContext";
 import ModalRenderer from "./components/ModalRenderer";
 import { AuthProvider } from "./context/AuthContext";
 import RotaProtegida from "./components/common/RotaProtegida";
+import RecuperacaoSenha from "./pages/RecuperacaoSenha";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                 </Route>
               </Route>
+              <Route path="/recuperacao-senha" element={<RecuperacaoSenha/>}></Route>
             </Routes>
             <ModalRenderer />
           </ModalProvider>
