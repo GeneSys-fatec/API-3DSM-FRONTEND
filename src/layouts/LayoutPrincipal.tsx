@@ -52,7 +52,6 @@ export default function LayoutPrincipal() {
             />
           )}
         </div>
-
         <div className="lg:hidden">
           {!isEquipesPage && (
             <BarraLateralProjetos
@@ -63,15 +62,13 @@ export default function LayoutPrincipal() {
             />
           )}
         </div>
-
         {!isEquipesPage && isSidebarOpen && (
           <div
             className="fixed inset-0 bg-black/50 z-30 lg:hidden"
             onClick={toggleSidebar}
           ></div>
         )}
-
-        <main className="p-2 md:p-4 flex-1 flex flex-col min-w-0 h-full">
+        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto lg:pb-0 pb-16">
           {!isEquipesPage && !isCalendarioPage && <NavbarProjetos />}
           <Outlet context={{ selectedProjectId }} />
         </main>
