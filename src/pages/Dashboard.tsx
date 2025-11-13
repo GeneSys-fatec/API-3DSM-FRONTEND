@@ -187,7 +187,7 @@ export default function Dashboard() {
 
       } catch (error) {
         console.error("Erro ao buscar dados do dashboard:", error);
-        setDashboardError("Não foi possível conectar ao servidor. Tente novamente.");
+        setDashboardError("Erro ao carregar dados do dashboard.");
 
       } finally {
         setLoading(false);

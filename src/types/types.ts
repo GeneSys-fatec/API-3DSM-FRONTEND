@@ -29,6 +29,7 @@ export type Usuario = {
   usuId: string;
   usuNome: string;
   usuEmail?: string;
+  usuSenha: string;
   usuCaminhoFoto?: string;
   usuDataCriacao?: string;
   usuDataAtualizacao?: string;
