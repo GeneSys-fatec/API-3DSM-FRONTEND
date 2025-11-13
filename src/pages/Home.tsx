@@ -59,7 +59,7 @@ export default function Home() {
   ) => {
     try {
       const response = await authFetch(
-        `http://localhost:8080/colunas/reordenar`,
+        `http://localhost:8000/colunas/reordenar`,
         {
           method: "PUT",
           body: JSON.stringify(updateData),
@@ -162,7 +162,7 @@ export default function Home() {
 
       try {
         const response = await authFetch(
-          `http://localhost:8080/tarefa/atualizar/${activeId}`,
+          `http://localhost:8000/tarefa/atualizar/${activeId}`,
           {
             method: "PUT",
             body: JSON.stringify({ ...tarefaMovida, tarStatus: overContainer }),
@@ -184,7 +184,7 @@ export default function Home() {
     if (!selectedProjectId) return;
     try {
       const response = await authFetch(
-        "http://localhost:8080/colunas/cadastrar",
+        "http://localhost:8000/colunas/cadastrar",
         {
           method: "POST",
           body: JSON.stringify({
@@ -212,7 +212,7 @@ export default function Home() {
 
     try {
       const response = await authFetch(
-        `http://localhost:8080/colunas/atualizar/${id}`,
+        `http://localhost:8000/colunas/atualizar/${id}`,
         {
           method: "PUT",
           body: JSON.stringify({ titulo: newTitle }),
@@ -235,8 +235,8 @@ export default function Home() {
     const { type, data } = itemParaExcluir;
     const url =
       type === "tarefa"
-        ? `http://localhost:8080/tarefa/apagar/${(data as Tarefa).tarId}`
-        : `http://localhost:8080/colunas/deletar/${(data as Coluna).id}`;
+        ? `http://localhost:8000/tarefa/apagar/${(data as Tarefa).tarId}`
+        : `http://localhost:8000/colunas/deletar/${(data as Coluna).id}`;
 
     try {
       const response = await authFetch(url, { method: "DELETE" });

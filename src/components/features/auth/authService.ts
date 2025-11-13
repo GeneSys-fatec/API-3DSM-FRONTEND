@@ -22,7 +22,7 @@ interface ServiceResponse {
 }
 
 export const cadastrar = async (novoUsuario: UsuarioCadastroDTO): Promise<ServiceResponse> => {
-    const response = await fetch("http://localhost:8080/auth/cadastrar", {
+    const response = await fetch("http://localhost:8000/auth/cadastrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(novoUsuario),
@@ -32,7 +32,7 @@ export const cadastrar = async (novoUsuario: UsuarioCadastroDTO): Promise<Servic
 }
 
 export const login = async (usuario: UsuarioLoginDTO): Promise<AuthResponseData> => {
-    const response = await fetch("http://localhost:8080/auth/login", {
+    const response = await fetch("http://localhost:8000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -46,7 +46,7 @@ export const login = async (usuario: UsuarioLoginDTO): Promise<AuthResponseData>
 
 export const logout = async () => {
     try {
-        await fetch("http://localhost:8080/auth/logout", {
+        await fetch("http://localhost:8000/auth/logout", {
             method: "POST",
             credentials: "include",
         });
@@ -58,7 +58,7 @@ export const logout = async () => {
 
 export const verificarSessao = async () => {
   try {
-    const response = await fetch("http://localhost:8080/auth/session", {
+    const response = await fetch("http://localhost:8000/auth/session", {
       method: "GET",
       credentials: "include",
     });

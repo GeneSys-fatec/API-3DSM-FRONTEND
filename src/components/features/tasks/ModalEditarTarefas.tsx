@@ -51,7 +51,7 @@ export default function ModalEditarTarefas({
   useEffect(() => {
     if (projId) {
       //
-      authFetch(`http://localhost:8080/projeto/${projId}/membros`) //
+      authFetch(`http://localhost:8000/projeto/${projId}/membros`) //
         .then((res) => res.json())
         .then(setUsuarios)
         .catch((err) =>
@@ -61,7 +61,7 @@ export default function ModalEditarTarefas({
       console.warn("ID do projeto não fornecido para o modal de edição.");
     }
 
-    authFetch(`http://localhost:8080/tarefa/${tarefaInicial.tarId}/anexos`) //
+    authFetch(`http://localhost:8000/tarefa/${tarefaInicial.tarId}/anexos`) //
       .then((res) => res.json())
       .then(setAnexosExistentes)
       .catch((err) => console.error("Erro ao buscar anexos:", err));
@@ -193,7 +193,7 @@ export default function ModalEditarTarefas({
 
     try {
       await authFetch(
-        `http://localhost:8080/tarefa/${
+        `http://localhost:8000/tarefa/${
           tarefa.tarId
         }/anexos/${encodeURIComponent(nomeArquivo)}`,
         { method: "DELETE", credentials: "include" }
@@ -246,7 +246,7 @@ export default function ModalEditarTarefas({
 
     try {
       const res = await authFetch(
-        `http://localhost:8080/tarefa/atualizar/${tarefa.tarId}`,
+        `http://localhost:8000/tarefa/atualizar/${tarefa.tarId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

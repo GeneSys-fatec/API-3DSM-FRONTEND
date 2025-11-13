@@ -55,7 +55,7 @@ export default function ModalCriarTarefas({
 
   useEffect(() => {
     if (selectedProjectId) {
-      authFetch(`http://localhost:8080/projeto/${selectedProjectId}/membros`)
+      authFetch(`http://localhost:8000/projeto/${selectedProjectId}/membros`)
         .then((res) => res.json())
         .then((data) => setUsuarios(data))
         .catch((err) =>
@@ -74,7 +74,7 @@ export default function ModalCriarTarefas({
     (async () => {
       try {
         const res = await authFetch(
-          `http://localhost:8080/colunas/por-projeto/${projId}`
+          `http://localhost:8000/colunas/por-projeto/${projId}`
         );
         if (!res.ok) {
           setColunas([]);
@@ -237,7 +237,7 @@ export default function ModalCriarTarefas({
     setIsSubmitting(true);
 
     try {
-      const res = await authFetch("http://localhost:8080/tarefa/cadastrar", {
+      const res = await authFetch("http://localhost:8000/tarefa/cadastrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...tarefa, projId: selectedProjectId }),

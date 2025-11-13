@@ -83,7 +83,7 @@ export default function ListaTarefas() {
     setError(null);
     try {
       const response = await authFetch(
-        `http://localhost:8080/tarefa/por-projeto/${selectedProjectId}`
+        `http://localhost:8000/tarefa/por-projeto/${selectedProjectId}`
       );
       if (!response.ok) {
         const errorBody = await response.text();
@@ -126,7 +126,7 @@ export default function ListaTarefas() {
 
     try {
       const response = await authFetch(
-        `http://localhost:8080/tarefa/apagar/${tarefaParaExcluir}`,
+        `http://localhost:8000/tarefa/apagar/${tarefaParaExcluir}`,
         {
           method: "DELETE",
           credentials: "include",

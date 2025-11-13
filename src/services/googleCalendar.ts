@@ -8,8 +8,8 @@ export interface RbcEvent {
   resource?: any;
 }
 
-// Base da API: usa VITE_API_URL se existir; senão, localhost:8080
-const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8080';
+// Base da API: usa VITE_API_URL se existir; senão, localhost:8000
+const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000';
 
 function withBase(path: string) {
   return `${API_BASE}${path}`;

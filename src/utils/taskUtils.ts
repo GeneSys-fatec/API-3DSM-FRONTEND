@@ -11,7 +11,7 @@ export async function uploadTaskAttachments(
     formData.append("file", arquivo);
 
     const uploadRes = await authFetch(
-      `http://localhost:8080/tarefa/${tarId}/upload`,
+      `http://localhost:8000/tarefa/${tarId}/upload`,
       { method: "POST", body: formData }
     );
 
@@ -26,9 +26,9 @@ export async function uploadTaskAttachments(
 export async function tryDeleteTask(tarId: string | number): Promise<boolean> {
   const id = String(tarId);
   const candidates = [
-    `http://localhost:8080/tarefa/${id}`,
-    `http://localhost:8080/tarefa/deletar/${id}`,
-    `http://localhost:8080/tarefa/${id}/deletar`,
+    `http://localhost:8000/tarefa/${id}`,
+    `http://localhost:8000/tarefa/deletar/${id}`,
+    `http://localhost:8000/tarefa/${id}/deletar`,
   ];
 
   for (const url of candidates) {
