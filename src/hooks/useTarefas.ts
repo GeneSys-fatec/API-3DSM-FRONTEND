@@ -53,7 +53,7 @@ export function useTarefas(selectedProjectId: string | null) {
     setLoading(true);
     try {
       const response = await authFetch(
-        `http://localhost:8080/tarefa/por-projeto/${selectedProjectId}`
+        `http://localhost:8000/tarefa/por-projeto/${selectedProjectId}`
       );
       if (!response.ok) throw new Error('Erro ao carregar tarefas');
       const data: Tarefa[] = await response.json();
@@ -90,7 +90,7 @@ export function useTarefas(selectedProjectId: string | null) {
   const excluirTarefa = async (tarefaId: string) => {
     try {
       const response = await authFetch(
-        `http://localhost:8080/tarefa/apagar/${tarefaId}`,
+        `http://localhost:8000/tarefa/apagar/${tarefaId}`,
         { method: 'DELETE' }
       );
       if (response.ok) {

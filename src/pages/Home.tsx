@@ -55,14 +55,14 @@ export default function Home() {
   const colunasIds = useMemo(() => colunas.map((c) => c.id), [colunas]);
 
   const handleSaveColumnOrder = async (
-    updateData: { id: string; ordem: number }[]
+    dtoParaBackend: { projetoId: string; colunasIdsOrdenadas: string[] } 
   ) => {
     try {
       const response = await authFetch(
-        `http://localhost:8080/colunas/reordenar`,
+        `http://localhost:8000/colunas/reordenar`,
         {
           method: "PUT",
-          body: JSON.stringify(updateData),
+          body: JSON.stringify(dtoParaBackend),
         }
       );
       if (!response.ok)
@@ -109,17 +109,23 @@ export default function Home() {
       setColunas((prevColunas) => {
         const activeIndex = prevColunas.findIndex((c) => c.id === activeId);
         const overIndex = prevColunas.findIndex((c) => c.id === overId);
-
         if (activeIndex === -1 || overIndex === -1) return prevColunas;
 
         const newColunas = arrayMove(prevColunas, activeIndex, overIndex);
 
-        const updateData = newColunas.map((col, index) => ({
-          id: col.id,
-          ordem: index,
-        }));
+        if (!selectedProjectId) {
+          console.error("ID do projeto não encontrado, não é possível reordenar.");
+          return prevColunas; 
+        }
 
-        handleSaveColumnOrder(updateData);
+        const colunasIdsOrdenadas = newColunas.map(col => col.id);
+
+        const dtoParaBackend = {
+          projetoId: selectedProjectId,
+          colunasIdsOrdenadas: colunasIdsOrdenadas
+        };
+
+        handleSaveColumnOrder(dtoParaBackend); 
 
         return newColunas;
       });
@@ -162,7 +168,7 @@ export default function Home() {
 
       try {
         const response = await authFetch(
-          `http://localhost:8080/tarefa/atualizar/${activeId}`,
+          `http://localhost:8000/tarefa/atualizar/${activeId}`,
           {
             method: "PUT",
             body: JSON.stringify({ ...tarefaMovida, tarStatus: overContainer }),
@@ -184,7 +190,7 @@ export default function Home() {
     if (!selectedProjectId) return;
     try {
       const response = await authFetch(
-        "http://localhost:8080/colunas/cadastrar",
+        "http://localhost:8000/colunas/cadastrar",
         {
           method: "POST",
           body: JSON.stringify({
@@ -212,7 +218,7 @@ export default function Home() {
 
     try {
       const response = await authFetch(
-        `http://localhost:8080/colunas/atualizar/${id}`,
+        `http://localhost:8000/colunas/atualizar/${id}`,
         {
           method: "PUT",
           body: JSON.stringify({ titulo: newTitle }),
@@ -235,8 +241,8 @@ export default function Home() {
     const { type, data } = itemParaExcluir;
     const url =
       type === "tarefa"
-        ? `http://localhost:8080/tarefa/apagar/${(data as Tarefa).tarId}`
-        : `http://localhost:8080/colunas/deletar/${(data as Coluna).id}`;
+        ? `http://localhost:8000/tarefa/apagar/${(data as Tarefa).tarId}`
+        : `http://localhost:8000/colunas/deletar/${(data as Coluna).id}`;
 
     try {
       const response = await authFetch(url, { method: "DELETE" });

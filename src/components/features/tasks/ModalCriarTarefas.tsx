@@ -54,14 +54,50 @@ export default function ModalCriarTarefas({
   const submittingRef = React.useRef<boolean>(false);
 
   useEffect(() => {
-    if (selectedProjectId) {
-      authFetch(`http://localhost:8080/projeto/${selectedProjectId}/membros`)
-        .then((res) => res.json())
-        .then((data) => setUsuarios(data))
-        .catch((err) =>
-          console.error("Erro ao buscar usuários do projeto:", err)
+    const fetchMembrosDaEquipe = async () => {
+      if (!selectedProjectId) {
+        setUsuarios([]);
+        return;
+      }
+
+      try {
+        const projetoResponse = await authFetch(
+          `http://localhost:8000/projeto/${selectedProjectId}`
         );
-    }
+        if (!projetoResponse.ok) {
+          throw new Error("Falha ao buscar detalhes do projeto");
+        }
+        
+        const projeto: { equId: string } = await projetoResponse.json(); 
+        const equipeId = projeto.equId;
+
+        if (!equipeId) {
+          throw new Error("Projeto não tem um ID de equipe associado.");
+        }
+
+        const equipeResponse = await authFetch(
+          `http://localhost:8000/equipe/${equipeId}`
+        );
+        if (!equipeResponse.ok) {
+          throw new Error("Falha ao buscar dados da equipe");
+        }
+        
+        const equipe: { equMembros: Usuario[] } = await equipeResponse.json(); 
+
+        if (equipe.equMembros) {
+          setUsuarios(equipe.equMembros);
+        } else {
+          console.warn("Objeto 'equipe' não contém 'equMembros'", equipe);
+          setUsuarios([]);
+        }
+        
+      } catch (err) {
+        console.error("Erro ao buscar usuários para o modal:", err);
+        setUsuarios([]);
+      }
+    };
+    fetchMembrosDaEquipe();
+
   }, [selectedProjectId]);
 
   useEffect(() => {
@@ -74,7 +110,7 @@ export default function ModalCriarTarefas({
     (async () => {
       try {
         const res = await authFetch(
-          `http://localhost:8080/colunas/por-projeto/${projId}`
+          `http://localhost:8000/colunas/por-projeto/${projId}`
         );
         if (!res.ok) {
           setColunas([]);
@@ -237,7 +273,7 @@ export default function ModalCriarTarefas({
     setIsSubmitting(true);
 
     try {
-      const res = await authFetch("http://localhost:8080/tarefa/cadastrar", {
+      const res = await authFetch("http://localhost:8000/tarefa/cadastrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...tarefa, projId: selectedProjectId }),

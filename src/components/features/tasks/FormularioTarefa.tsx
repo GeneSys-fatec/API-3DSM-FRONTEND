@@ -21,7 +21,7 @@ interface FormularioTarefaProps {
 async function baixarAnexo(tarefaId: string, nomeArquivo: string) {
   try {
     const res = await authFetch(
-      `http://localhost:8080/tarefa/${tarefaId}/anexos/${encodeURIComponent(
+      `http://localhost:8000/tarefa/${tarefaId}/anexos/${encodeURIComponent(
         nomeArquivo
       )}`
     );
@@ -204,7 +204,7 @@ export default function FormularioTarefa({
     (async () => {
       try {
         const res = await authFetch(
-          `http://localhost:8080/colunas/por-projeto/${projId}`
+          `http://localhost:8000/colunas/por-projeto/${projId}`
         );
         if (!res.ok) {
           setColunas([]);
@@ -290,7 +290,7 @@ export default function FormularioTarefa({
             </h4>
             <ul className="space-y-3">
               {anexosExistentes?.map((anexo) => {
-                const anexoUrl = `http://localhost:8080/anexos/${encodeURIComponent(
+                const anexoUrl = `http://localhost:8000/anexos/${encodeURIComponent(
                   anexo.arquivoNome
                 )}`;
                 const isImage = /\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(
