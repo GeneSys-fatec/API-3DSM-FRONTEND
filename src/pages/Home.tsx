@@ -1,4 +1,3 @@
-
 import { ModalContext } from "../context/ModalContext";
 import { authFetch } from "../utils/api";
 import { useKanban } from "../hooks/useKanban";
@@ -53,16 +52,19 @@ export default function Home() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 15 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    }),
     useSensor(KeyboardSensor, {})
   );
 
   const colunasIds = useMemo(() => colunas.map((c) => c.id), [colunas]);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  const handleSaveColumnOrder = async (
-    dtoParaBackend: { projetoId: string; colunasIdsOrdenadas: string[] } 
-  ) => {
+  const handleSaveColumnOrder = async (dtoParaBackend: {
+    projetoId: string;
+    colunasIdsOrdenadas: string[];
+  }) => {
     try {
       const response = await authFetch(
         `http://localhost:8000/colunas/reordenar`,
@@ -73,10 +75,14 @@ export default function Home() {
       );
       if (!response.ok) {
         const text = await response.text().catch(() => "");
-        console.error("Falha ao reordenar as colunas no servidor.", response.status, text);
+        console.error(
+          "Falha ao reordenar as colunas no servidor.",
+          response.status,
+          text
+        );
         throw new Error("Falha ao reordenar as colunas no servidor.");
       } else {
-        console.debug("Ordem de colunas salva com sucesso", updateData);
+        console.debug("Ordem de colunas salva com sucesso", dtoParaBackend);
       }
     } catch (error) {
       console.error(
@@ -115,42 +121,33 @@ export default function Home() {
     const activeId = active.id as string;
     const overId = over.id as string;
     const activeType = active.data.current?.type;
-
     if (activeType === "column") {
-      // compute new order first
       const activeIndex = colunas.findIndex((c) => c.id === activeId);
       const overIndex = colunas.findIndex((c) => c.id === overId);
+      if (activeIndex === -1 || overIndex === -1 || activeIndex === overIndex) {
+        return;
+      }
+      const newOrderedColumns = arrayMove(colunas, activeIndex, overIndex);
+      setColunas(newOrderedColumns);
+      if (!selectedProjectId) {
+        console.error(
+          "ID do projeto não encontrado, não é possível reordenar."
+        );
+        fetchData();
+        return;
+      }
+      const colunasIdsOrdenadas = newOrderedColumns.map(
+        (col: Coluna) => col.id
+      );
+      const dtoParaBackend = {
+        projetoId: selectedProjectId,
+        colunasIdsOrdenadas: colunasIdsOrdenadas,
+      };
 
-      if (activeIndex === -1 || overIndex === -1) return;
-      setColunas((prevColunas) => {
-        const activeIndex = prevColunas.findIndex((c) => c.id === activeId);
-        const overIndex = prevColunas.findIndex((c) => c.id === overId);
-        if (activeIndex === -1 || overIndex === -1) return prevColunas;
-
-      const newColunas = arrayMove(colunas, activeIndex, overIndex);
-
-      setColunas(newColunas);
-
-      const updateData = newColunas.map((col, index) => ({
-        id: col.id,
-        ordem: index + 1,
-      }));
-        if (!selectedProjectId) {
-          console.error("ID do projeto não encontrado, não é possível reordenar.");
-          return prevColunas; 
-        }
-
-        const colunasIdsOrdenadas = newColunas.map(col => col.id);
-
-        const dtoParaBackend = {
-          projetoId: selectedProjectId,
-          colunasIdsOrdenadas: colunasIdsOrdenadas
-        };
-
-        handleSaveColumnOrder(dtoParaBackend); 
-
-      handleSaveColumnOrder(updateData);
+    
+      handleSaveColumnOrder(dtoParaBackend);
     }
+  
 
     if (activeType === "task") {
       const activeContainer = encontrarColunaDaTarefa(activeId, tarefas);
@@ -246,7 +243,10 @@ export default function Home() {
         }
       );
       if (!response.ok) {
-        await showErrorToastFromResponse(response, "Erro ao atualizar o título");
+        await showErrorToastFromResponse(
+          response,
+          "Erro ao atualizar o título"
+        );
         setColunas(originalColumns);
         return;
       }
@@ -332,10 +332,15 @@ export default function Home() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex flex-col h-full lg:flex-row items-center lg:items-start gap-5 pt-5 pb-4 lg:pr-4 flex-1 overflow-y-auto lg:overflow-x-auto lg:overflow-y-hidden">
+        <div className="flex flex-col h-full lg:flex-row items-center lg:items-start gap-5 pt-5 pb-4 lg:pr-4 flex-1 overflow-y-auto lg:overflow-x-auto lg:overflow-y-hidden lg:px-3
+        md:px-2">
           <SortableContext
             items={colunasIds}
-            strategy={isDesktop ? horizontalListSortingStrategy : verticalListSortingStrategy}
+            strategy={
+              isDesktop
+                ? horizontalListSortingStrategy
+                : verticalListSortingStrategy
+            }
           >
             {colunas.map((coluna) => (
               <ColunaKanban
