@@ -61,14 +61,14 @@ export default function Home() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const handleSaveColumnOrder = async (
-    updateData: { id: string; ordem: number }[]
+    dtoParaBackend: { projetoId: string; colunasIdsOrdenadas: string[] } 
   ) => {
     try {
       const response = await authFetch(
-        `http://localhost:8080/colunas/reordenar`,
+        `http://localhost:8000/colunas/reordenar`,
         {
           method: "PUT",
-          body: JSON.stringify(updateData),
+          body: JSON.stringify(dtoParaBackend),
         }
       );
       if (!response.ok) {
@@ -122,6 +122,10 @@ export default function Home() {
       const overIndex = colunas.findIndex((c) => c.id === overId);
 
       if (activeIndex === -1 || overIndex === -1) return;
+      setColunas((prevColunas) => {
+        const activeIndex = prevColunas.findIndex((c) => c.id === activeId);
+        const overIndex = prevColunas.findIndex((c) => c.id === overId);
+        if (activeIndex === -1 || overIndex === -1) return prevColunas;
 
       const newColunas = arrayMove(colunas, activeIndex, overIndex);
 
@@ -131,6 +135,19 @@ export default function Home() {
         id: col.id,
         ordem: index + 1,
       }));
+        if (!selectedProjectId) {
+          console.error("ID do projeto não encontrado, não é possível reordenar.");
+          return prevColunas; 
+        }
+
+        const colunasIdsOrdenadas = newColunas.map(col => col.id);
+
+        const dtoParaBackend = {
+          projetoId: selectedProjectId,
+          colunasIdsOrdenadas: colunasIdsOrdenadas
+        };
+
+        handleSaveColumnOrder(dtoParaBackend); 
 
       handleSaveColumnOrder(updateData);
     }
@@ -172,7 +189,7 @@ export default function Home() {
 
       try {
         const response = await authFetch(
-          `http://localhost:8080/tarefa/atualizar/${activeId}`,
+          `http://localhost:8000/tarefa/atualizar/${activeId}`,
           {
             method: "PUT",
             body: JSON.stringify({ ...tarefaMovida, tarStatus: overContainer }),
@@ -194,7 +211,7 @@ export default function Home() {
     if (!selectedProjectId) return;
     try {
       const response = await authFetch(
-        "http://localhost:8080/colunas/cadastrar",
+        "http://localhost:8000/colunas/cadastrar",
         {
           method: "POST",
           body: JSON.stringify({
@@ -222,7 +239,7 @@ export default function Home() {
 
     try {
       const response = await authFetch(
-        `http://localhost:8080/colunas/atualizar/${id}`,
+        `http://localhost:8000/colunas/atualizar/${id}`,
         {
           method: "PUT",
           body: JSON.stringify({ titulo: newTitle }),
@@ -245,8 +262,8 @@ export default function Home() {
     const { type, data } = itemParaExcluir;
     const url =
       type === "tarefa"
-        ? `http://localhost:8080/tarefa/apagar/${(data as Tarefa).tarId}`
-        : `http://localhost:8080/colunas/deletar/${(data as Coluna).id}`;
+        ? `http://localhost:8000/tarefa/apagar/${(data as Tarefa).tarId}`
+        : `http://localhost:8000/colunas/deletar/${(data as Coluna).id}`;
 
     try {
       const response = await authFetch(url, { method: "DELETE" });

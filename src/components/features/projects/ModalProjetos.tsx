@@ -87,7 +87,7 @@ export default class ModalProjetos extends React.Component<
 
     try {
       const response = await authFetch(
-        "http://localhost:8080/projeto/cadastrar",
+        "http://localhost:8000/projeto/cadastrar",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -95,7 +95,7 @@ export default class ModalProjetos extends React.Component<
           body: JSON.stringify({
             projNome: this.state.projNome,
             projDescricao: this.state.projDescricao,
-            equipeId: this.props.equipeId,
+            equId: this.props.equipeId,
           }),
         }
       );

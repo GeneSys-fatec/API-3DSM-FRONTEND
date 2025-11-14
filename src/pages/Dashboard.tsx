@@ -166,8 +166,8 @@ export default function Dashboard() {
         setLoading(true);
         setDashboardError(null);
 
-        const tarefasRes = await authFetch(`http://localhost:8080/dashboard/tarefas-concluidas/${selectedProjectId}`);
-        const produtividadeRes = await authFetch(`http://localhost:8080/dashboard/produtividade/${selectedProjectId}`);
+        const tarefasRes = await authFetch(`http://localhost:8000/dashboard/tarefas-concluidas/${selectedProjectId}`);
+        const produtividadeRes = await authFetch(`http://localhost:8000/dashboard/produtividade/${selectedProjectId}`);
 
 
         if (!tarefasRes.ok || !produtividadeRes.ok) {

@@ -21,7 +21,7 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
 
     const carregarComentarios = async () => {
         try {
-            const response = await authFetch(`http://localhost:8080/comentario/tarefa/${tarId}`)
+            const response = await authFetch(`http://localhost:8000/comentario/tarefa/${tarId}`)
             if (!response.ok) {
                 console.error("Erro HTTP:", response.status)
                 setComentarios([])
@@ -42,7 +42,7 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
                 return
             }
 
-            const response = await authFetch("http://localhost:8080/comentario/cadastrar", {
+            const response = await authFetch("http://localhost:8000/comentario/cadastrar", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -79,7 +79,7 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
         }
 
         try {
-            const response = await authFetch(`http://localhost:8080/comentario/atualizar/${comentario.comId}`, {
+            const response = await authFetch(`http://localhost:8000/comentario/atualizar/${comentario.comId}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json"
@@ -111,7 +111,7 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
         if (!comentarioExcluindoId) {
             return
         }
-        await authFetch(`http://localhost:8080/comentario/apagar/${comentarioExcluindoId}`, {
+        await authFetch(`http://localhost:8000/comentario/apagar/${comentarioExcluindoId}`, {
             method: "DELETE",
             credentials: "include",
         })
@@ -265,7 +265,7 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
                 return
             }
 
-            const response = await authFetch("http://localhost:8080/comentario/cadastrar", {
+             const response = await authFetch("http://localhost:8000/comentario/cadastrar", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"

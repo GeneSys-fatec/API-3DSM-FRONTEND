@@ -2,7 +2,7 @@ import { Notificacao } from '@/types/types';
 import { authFetch } from '@/utils/api';
 
 export const buscarNotificacoes = async (): Promise<Notificacao[]> => {
-  const resposta = await authFetch('http://localhost:8080/notificacao/listar', {
+  const resposta = await authFetch('http://localhost:8000/notificacao/listar', {
     method: 'GET',
     credentials: "include",
   });
@@ -51,7 +51,7 @@ export const buscarNotificacoes = async (): Promise<Notificacao[]> => {
 };
 
 export const buscarNotificacoesNaoLidas = async (): Promise<boolean> => {
-  const resposta = await authFetch('http://localhost:8080/notificacao/listar', { method: 'GET', credentials: "include", });
+  const resposta = await authFetch('http://localhost:8000/notificacao/listar', { method: 'GET', credentials: "include", });
 
   if (!resposta.ok) {
     console.error('Erro ao buscar notificações');
@@ -63,7 +63,7 @@ export const buscarNotificacoesNaoLidas = async (): Promise<boolean> => {
 };
 
 export const marcarTodasComoLidas = async (): Promise<void> => {
-  const resposta = await authFetch('http://localhost:8080/notificacao/marcar-todas', {
+  const resposta = await authFetch('http://localhost:8000/notificacao/marcar-todas', {
     method: 'PUT',
     credentials: "include",
   });
@@ -74,7 +74,7 @@ export const marcarTodasComoLidas = async (): Promise<void> => {
 };
 
 export const deletarNotificacao = async (id: string): Promise<void> => {
-  const resposta = await authFetch(`http://localhost:8080/notificacao/${id}`, {
+  const resposta = await authFetch(`http://localhost:8000/notificacao/${id}`, {
     method: 'DELETE',
     credentials: "include",
   });

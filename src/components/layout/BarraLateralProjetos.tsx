@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
 import { getMinhasEquipes } from "../features/teams/teamService";
+import { getMeusProjetos } from "../features/projects/projectService";
 
 interface EquipeComProjetos extends Equipe {
   projetos: Projeto[];
@@ -43,18 +44,40 @@ export default function BarraLateralProjetos({
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const equipesComProjetosDoBackend = await getMinhasEquipes();
+      const [equipes, projetos] = await Promise.all([
+        getMinhasEquipes(),
+        getMeusProjetos(),
+      ]);
+      const projetosPorEquipe = new Map<string, Projeto[]>();
+      for (const projeto of projetos) {
+        if (!projeto.equId) continue; 
+        if (!projetosPorEquipe.has(projeto.equId)) {
+          projetosPorEquipe.set(projeto.equId, []);
+        }
+        projetosPorEquipe.get(projeto.equId)!.push(projeto);
+      }
 
-      setEquipesComProjetos(equipesComProjetosDoBackend);
+      const equipesComProjetos: EquipeComProjetos[] = equipes.map((equipe) => ({
+        ...equipe,
+        projetos: projetosPorEquipe.get(equipe.equId) || [],
+      }));
 
-      const primeiroProjeto = equipesComProjetosDoBackend[0]?.projetos[0];
-      if (primeiroProjeto && !activeProjectId) {
-        const firstProjectId = primeiroProjeto.projId;
-        setActiveProjectId(firstProjectId);
-        onProjectSelect(firstProjectId);
-      } else if (!primeiroProjeto) {
+      setEquipesComProjetos(equipesComProjetos);
+
+      const primeiroProjeto = equipesComProjetos[0]?.projetos[0];
+      
+      if (primeiroProjeto) {
+        setActiveProjectId(currentId => {
+          if (currentId === null) { 
+            onProjectSelect(primeiroProjeto.projId);
+            return primeiroProjeto.projId;
+          }
+          return currentId; 
+        });
+      } else {
         onProjectSelect(null);
       }
+
     } catch (error: unknown) {
       console.error(error);
       toast.error(
@@ -91,7 +114,7 @@ export default function BarraLateralProjetos({
     try {
       setIsDeleting(true);
       await authFetch(
-        `http://localhost:8080/projeto/apagar/${encodeURIComponent(
+        `http://localhost:8000/projeto/apagar/${encodeURIComponent(
           optionsMenu.selectedId
         )}`,
         { method: "DELETE", credentials: "include", }
