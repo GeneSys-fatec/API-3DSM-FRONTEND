@@ -72,7 +72,7 @@ export default function ColunaKanban(props: ColunaKanbanProps) {
         corFundo: corAtual.fundo,
       },
     },
-    disabled: isEditing || !isDesktop,
+    disabled: isEditing,
   });
 
   const style = {
@@ -117,7 +117,8 @@ export default function ColunaKanban(props: ColunaKanbanProps) {
     >
       <div
         {...listeners}
-        className={`group p-3 border-t-4 ${classeBordaHeader} rounded-t-lg ${corAtual.fundo} flex items-center justify-between ${isDesktop ? "cursor-grab active:cursor-grabbing" : ""}`}
+        className={`group p-3 border-t-4 ${classeBordaHeader} rounded-t-lg ${corAtual.fundo} flex items-center justify-between touch-none ${isDesktop ? "cursor-grab active:cursor-grabbing" : ""}`}
+        style={{ touchAction: "none" }}
       >
 
         {isEditing ? (

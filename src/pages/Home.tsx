@@ -1,3 +1,4 @@
+
 import { ModalContext } from "../context/ModalContext";
 import { authFetch } from "../utils/api";
 import { useKanban } from "../hooks/useKanban";
@@ -16,6 +17,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -27,8 +29,10 @@ import {
 import {
   SortableContext,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
+import useMediaQuery from "@/hooks/MediaQuerie";
 import { useMemo } from "react";
 
 export default function Home() {
@@ -48,11 +52,13 @@ export default function Home() {
   } | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 15 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
     useSensor(KeyboardSensor, {})
   );
 
   const colunasIds = useMemo(() => colunas.map((c) => c.id), [colunas]);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const handleSaveColumnOrder = async (
     updateData: { id: string; ordem: number }[]
@@ -65,8 +71,13 @@ export default function Home() {
           body: JSON.stringify(updateData),
         }
       );
-      if (!response.ok)
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        console.error("Falha ao reordenar as colunas no servidor.", response.status, text);
         throw new Error("Falha ao reordenar as colunas no servidor.");
+      } else {
+        console.debug("Ordem de colunas salva com sucesso", updateData);
+      }
     } catch (error) {
       console.error(
         "Erro ao salvar a ordem das colunas, revertendo a UI:",
@@ -106,23 +117,22 @@ export default function Home() {
     const activeType = active.data.current?.type;
 
     if (activeType === "column") {
-      setColunas((prevColunas) => {
-        const activeIndex = prevColunas.findIndex((c) => c.id === activeId);
-        const overIndex = prevColunas.findIndex((c) => c.id === overId);
+      // compute new order first
+      const activeIndex = colunas.findIndex((c) => c.id === activeId);
+      const overIndex = colunas.findIndex((c) => c.id === overId);
 
-        if (activeIndex === -1 || overIndex === -1) return prevColunas;
+      if (activeIndex === -1 || overIndex === -1) return;
 
-        const newColunas = arrayMove(prevColunas, activeIndex, overIndex);
+      const newColunas = arrayMove(colunas, activeIndex, overIndex);
 
-        const updateData = newColunas.map((col, index) => ({
-          id: col.id,
-          ordem: index,
-        }));
+      setColunas(newColunas);
 
-        handleSaveColumnOrder(updateData);
+      const updateData = newColunas.map((col, index) => ({
+        id: col.id,
+        ordem: index + 1,
+      }));
 
-        return newColunas;
-      });
+      handleSaveColumnOrder(updateData);
     }
 
     if (activeType === "task") {
@@ -258,7 +268,7 @@ export default function Home() {
         <ModalCriarTarefas
           onSuccess={fetchData}
           statusInicial={statusDaColuna}
-          selectedProjectId={selectedProjectId}
+          selectedProjectId={selectedProjectId ?? ""}
         />
       );
     },
@@ -308,7 +318,7 @@ export default function Home() {
         <div className="flex flex-col h-full lg:flex-row items-center lg:items-start gap-5 pt-5 pb-4 lg:pr-4 flex-1 overflow-y-auto lg:overflow-x-auto lg:overflow-y-hidden">
           <SortableContext
             items={colunasIds}
-            strategy={horizontalListSortingStrategy}
+            strategy={isDesktop ? horizontalListSortingStrategy : verticalListSortingStrategy}
           >
             {colunas.map((coluna) => (
               <ColunaKanban
