@@ -291,14 +291,12 @@ export default function FormularioTarefa({
             <ul className="space-y-3">
               {anexosExistentes?.map((anexo) => {
                 // CORREÇÃO: A URL deve incluir o ID da tarefa.
-                const anexoUrl = `http://localhost:8000/anexos/${tarefa.tarId}/${anexo.arquivoNome}`;
-                console.log(anexo.arquivoNome);
-                const isImage = /\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(
-                  anexo.arquivoNome
-                );
+                const anexoUrl = `http://localhost:8000/anexos/tarefa/${tarefa.tarId}/${anexo}`;
+                console.log(anexo);
+                const isImage = /\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(anexo);
                 return (
                   <li
-                    key={`existente-${anexo.arquivoNome}`}
+                    key={`existente-${anexo}`}
                     className="text-sm gap-1"
                   >
                     <div className="flex items-start justify-between">
@@ -308,16 +306,16 @@ export default function FormularioTarefa({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 text-blue-600 hover:underline"
-                          title={`Abrir ${anexo.arquivoNome} em nova aba`}
+                          title={`Abrir ${anexo} em nova aba`}
                         >
-                          {getFileIcon(anexo.arquivoTipo || "")}
-                          <span className="truncate">{anexo.arquivoNome}</span>
+                          {getFileIcon(anexoUrl || "")}
+                          <span className="truncate">{anexo}</span>
                         </a>
                         {isImage && (
                           <div className="mt-1">
                             <img
                               src={anexoUrl}
-                              alt={`Preview de ${anexo.arquivoNome}`}
+                              alt={`Preview de ${anexo}`}
                               className="max-w-full h-auto max-h-32 rounded-md border object-contain cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() =>
                                 onVisualizaImagem && onVisualizaImagem(anexoUrl)
