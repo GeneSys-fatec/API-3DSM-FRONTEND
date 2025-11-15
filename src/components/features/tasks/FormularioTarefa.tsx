@@ -290,9 +290,9 @@ export default function FormularioTarefa({
             </h4>
             <ul className="space-y-3">
               {anexosExistentes?.map((anexo) => {
-                const anexoUrl = `http://localhost:8000/anexos/${encodeURIComponent(
-                  anexo.arquivoNome
-                )}`;
+                // CORREÇÃO: A URL deve incluir o ID da tarefa.
+                const anexoUrl = `http://localhost:8000/anexos/${tarefa.tarId}/${anexo.arquivoNome}`;
+                console.log(anexo.arquivoNome);
                 const isImage = /\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(
                   anexo.arquivoNome
                 );

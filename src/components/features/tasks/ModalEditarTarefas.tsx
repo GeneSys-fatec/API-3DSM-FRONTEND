@@ -94,7 +94,7 @@ export default function ModalEditarTarefas({
       }
     };
 
-    authFetch(`http://localhost:8000/tarefa/${tarefaInicial.tarId}/anexos`) //
+    authFetch(`http://localhost:8000/anexos/tarefa/${tarefaInicial.tarId}`) //
       .then((res) => res.json())
       .then(setAnexosExistentes)
       .catch((err) => console.error("Erro ao buscar anexos:", err));
