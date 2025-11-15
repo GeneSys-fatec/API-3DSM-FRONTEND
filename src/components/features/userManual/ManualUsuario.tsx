@@ -77,7 +77,7 @@ export default function ManualUsuario() {
                                 <p className="text-gray-600 py-6">Equipes agrupam pessoas e projetos. Somente membros têm acesso aos projetos vinculados à equipe.</p>
                                 <ul className="list-disc flex flex-col gap-4 pl-6 py-2 ml-5 mt-3 text-gray-600 space-y-2">
                                     <li><strong>Criar equipe:</strong> vá em Equipes → Criar Equipe → preencher nome, descrição e email dos membros desejados.</li>
-                                    <li><strong>Editar equipe:</strong> clicar no card da equipe, alterar nome, descrição ou iontegrantes e slavar alterações.</li>
+                                    <li><strong>Editar equipe:</strong> clicar no card da equipe, alterar nome, descrição ou integrantes e slavar alterações.</li>
                                     <li><strong>Convidar membros:</strong> um convite é enviado assim que o email do integrante é selecionado no modal de criação de equipe.</li>
                                 </ul>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -111,7 +111,7 @@ export default function ManualUsuario() {
                             </SectionWrapper>}
 
                             {section === "kanban" && <SectionWrapper title="Kanban" subtitle="Visão visual das tarefas">
-                                <p className="text-gray-600 py-6">O kanban permite mover tarefas entre colunas representando status (A Fazer, Fazendo, Concluído).</p>
+                                <p className="text-gray-600 py-6">O kanban permite mover tarefas entre colunas representando status (A Fazer, Em Desenvolvimento, Concluído).</p>
                                 <ul className="list-disc flex flex-col gap-4 pl-6 py-2 ml-5 mt-3 text-gray-600 space-y-2">
                                     <li>Arraste e solte para mudar a disposição das colunas.</li>
                                     <li>Clique em "+ adicionar tarefa" na coluna para criar tarefa direto na coluna.</li>
