@@ -34,6 +34,7 @@ export default function LayoutPrincipal() {
 
   const isEquipesPage = location.pathname.startsWith("/equipes");
   const isCalendarioPage = location.pathname.startsWith("/calendario");
+  const isManualPage = location.pathname.startsWith("/info");
 
   return (
     <div className="bg-slate-50 h-screen flex flex-col">
@@ -43,7 +44,7 @@ export default function LayoutPrincipal() {
         <div className="hidden lg:flex">
           {" "}
           <BarraLateral />
-          {!isEquipesPage && (
+          {!isEquipesPage && !isManualPage && (
             <BarraLateralProjetos
               isOpen={isSidebarOpen}
               onClose={toggleSidebar}
@@ -53,7 +54,7 @@ export default function LayoutPrincipal() {
           )}
         </div>
         <div className="lg:hidden">
-          {!isEquipesPage && (
+          {!isEquipesPage && !isManualPage && (
             <BarraLateralProjetos
               isOpen={isSidebarOpen}
               onClose={toggleSidebar}
@@ -62,26 +63,27 @@ export default function LayoutPrincipal() {
             />
           )}
         </div>
-        {!isEquipesPage && isSidebarOpen && (
+
+        {!isEquipesPage && !isManualPage && isSidebarOpen && (
           <div
             className="fixed inset-0 bg-black/50 z-30 lg:hidden"
             onClick={toggleSidebar}
           ></div>
         )}
-        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto lg:pb-0 pb-16">
-          {!isEquipesPage && !isCalendarioPage && <NavbarProjetos />}
+        <main className="p-2 md:p-4 flex-1 flex flex-col min-w-0 h-full">
+          {!isEquipesPage && !isManualPage && !isCalendarioPage  && <NavbarProjetos />}
           <Outlet context={{ selectedProjectId }} />
         </main>
       </div>
 
-      {!isEquipesPage && (
+      {!isEquipesPage && !isManualPage && (
         <ModalProjetos
           isOpen={isModalProjetosOpen}
           onClose={handleCloseModal}
           equipeId={targetEquipeId}
         />
       )}
-      {!isEquipesPage && <BottomNavbar />}
+      <BottomNavbar />
     </div>
   );
 }
