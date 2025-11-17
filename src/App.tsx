@@ -16,6 +16,7 @@ import { AuthProvider } from "./context/AuthContext";
 import RotaProtegida from "./components/common/RotaProtegida";
 import Historico from "./pages/Historico";
 import RecuperacaoSenha from "./pages/RecuperacaoSenha";
+import ManualUsuario from "./components/features/userManual/ManualUsuario";
 
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
                   <Route path="/tarefas" element={<Tarefas />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/historico/:id" element={<Historico />} />
+                  <Route path="/info" element={<ManualUsuario />} />
                 </Route>
               </Route>
               <Route path="/recuperacao-senha" element={<RecuperacaoSenha/>}></Route>
