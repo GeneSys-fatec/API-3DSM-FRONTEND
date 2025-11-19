@@ -22,14 +22,15 @@ interface ItemHistoricoProps {
   abertoPorPadrao?: boolean;
 }
 
-function formatarDataHora(data: Date): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(data);
+function formatarDataHora(dataRaw?: string | Date | null): string {
+    if (dataRaw == null) return ''; // evita erro se undefined/null
+    try {
+        const d = dataRaw instanceof Date ? dataRaw : new Date(dataRaw);
+        if (isNaN(d.getTime())) return String(dataRaw); // data inválida -> devolve original
+        return d.toLocaleString(); // ou formatação específica desejada
+    } catch {
+        return String(dataRaw);
+    }
 }
 
 function getEstiloAcao(acao: AcaoHistorico): string {

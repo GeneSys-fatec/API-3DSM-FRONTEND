@@ -36,14 +36,21 @@ interface ProjetoDTO {
 
 type CategoriaModificacao = "CRIACAO" | "EDICAO" | "EXCLUSAO";
 
-interface AuditoriaResponseDto {
-  projetoId: string;
-  tarefaId: string;
-  responsavel: { id: string; emailResponsavel: string };
-  modificacao: { categoria: CategoriaModificacao; modificacao: string };
-  dataAlteracao?: string;
-  horaAlteracao?: string;
-  traceId?: string;
+type AuditoriaResponseDto = any;
+
+function pick<T = any>(obj: any, ...paths: string[]): T | undefined {
+  for (const p of paths) {
+    if (!obj) continue;
+
+    const parts = p.split('.');
+    let cur = obj;
+    for (const part of parts) {
+      if (cur == null) { cur = undefined; break; }
+      cur = cur[part];
+    }
+    if (cur !== undefined && cur !== null && String(cur).trim() !== "") return cur as T;
+  }
+  return undefined;
 }
 
 function mapCategoriaToAcao(c: CategoriaModificacao): AcaoHistorico {
@@ -60,7 +67,27 @@ function mapCategoriaToAcao(c: CategoriaModificacao): AcaoHistorico {
 
 function parseDateTime(date?: string, time?: string): Date {
   if (date && time) return new Date(`${date}T${time}`);
-  if (date) return new Date(date);
+  if (date) {
+
+    const isoGuess = date.includes('/') ? date.split(' ').reverse().join(' ') : date;
+    const parsed = new Date(isoGuess);
+    if (!isNaN(parsed.getTime())) return parsed;
+    return new Date(date);
+  }
+  return new Date();
+}
+
+function parseDateTimeFromEvent(ev: AuditoriaResponseDto): Date {
+  const date = pick(ev, "dataAlteracao", "data", "criadoEm", "createdAt", "dataHora");
+  const time = pick(ev, "horaAlteracao", "hora", "time");
+
+  if (date && time) return parseDateTime(String(date), String(time));
+  if (date) {
+    return parseDateTime(String(date));
+  }
+  
+  const created = pick(ev, "criadoEm", "createdAt");
+  if (created) return parseDateTime(String(created));
   return new Date();
 }
 
@@ -82,7 +109,6 @@ async function fetchAuditoriaPorProjeto(projetoId: string): Promise<AuditoriaRes
 
 async function fetchProjetosDoUsuario(): Promise<ProjetoDTO[]> {
   try {
-    // Chama a rota definida no BuscaProjetoController
     const res = await authFetch("/projeto/meus-projetos");
     
     if (!res.ok) {
@@ -106,23 +132,27 @@ function mapAuditoriaParaHistorico(data: AuditoriaResponseDto[]): {
   const responsaveisMap = new Map<string, Editor>();
 
   for (const ev of data) {
-    const tarId = String(ev.tarefaId ?? "sem-id");
-    const tarNome = `Tarefa ${tarId}`; // Se o backend de auditoria não mandar o nome, fica genérico
+    const tarId = String(pick(ev, "tarefaId", "tarId", "tarefa", "tarefa_id") ?? "sem-id");
+    const tarNome = String(pick(ev, "tarefaNome", "tarNome", "tarefaNome", "titulo") ?? `Tarefa ${tarId}`);
     
-    const usuId = String(ev.responsavel?.id ?? "desconhecido");
-    const usuEmail = ev.responsavel?.emailResponsavel ?? "sem-email";
-    const usuNome = usuEmail.includes("@") ? usuEmail.split("@")[0] : `Usuário ${usuId}`;
+    const usuId = String(pick(ev, "responsavel.id", "responsavelId", "userId", "usuarioId") ?? "desconhecido");
+    const usuEmail = String(pick(ev, "responsavel.emailResponsavel", "responsavel.email", "responsavelEmail", "responsavelEmail", "email", "emailResponsavel") ?? "sem-email");
+    const usuNome = String(pick(ev, "responsavel.nome", "responsavel.nomeCompleto", "responsavelName", "nome", "usuNome") ?? (usuEmail.includes("@") ? usuEmail.split("@")[0] : `Usuário ${usuId}`));
 
     const editor: Editor = { usuId, usuEmail, usuNome };
 
     if (!responsaveisMap.has(usuId)) responsaveisMap.set(usuId, editor);
 
+    const modificacaoObj = pick(ev, "modificacao", "modificacoes[0]") ?? {};
+    const categoria = String(pick(modificacaoObj, "categoria") ?? pick(ev, "categoria") ?? "EDICAO") as CategoriaModificacao;
+    const tipo = String(pick(modificacaoObj, "modificacao", "mensagem", "descricao", "modificao") ?? pick(ev, "modificacao", "mensagem") ?? "Modificação");
+
     const alt: Alteracao = {
-      altId: ev.traceId ?? `${tarId}-${Math.random().toString(36).slice(2)}`,
-      altAcao: mapCategoriaToAcao(ev.modificacao?.categoria ?? "EDICAO"),
-      altTipo: ev.modificacao?.modificacao ?? "Modificação",
+      altId: String(pick(ev, "traceId", "id", "altId") ?? `${tarId}-${Math.random().toString(36).slice(2)}`),
+      altAcao: mapCategoriaToAcao(categoria),
+      altTipo: tipo,
       altEditor: editor,
-      altDataHora: parseDateTime(ev.dataAlteracao, ev.horaAlteracao),
+      altDataHora: parseDateTimeFromEvent(ev),
     };
 
     if (!byTask.has(tarId)) {
@@ -132,7 +162,6 @@ function mapAuditoriaParaHistorico(data: AuditoriaResponseDto[]): {
     }
   }
 
-  // Ordena alterações da mais recente para a mais antiga
   for (const item of byTask.values()) {
     item.alteracoes.sort((a, b) => b.altDataHora.getTime() - a.altDataHora.getTime());
   }
@@ -168,7 +197,6 @@ export default function ListaHistorico() {
   const [isLoading, setIsLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Ainda aceita :id pela URL, mas damos prioridade ao projeto ativo da barra lateral
   const { id: projetoIdParam } = useParams<{ id: string }>();
 
   useEffect(() => {
