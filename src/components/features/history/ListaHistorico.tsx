@@ -3,7 +3,6 @@ import ItemHistoricoTarefa from "./ItemHistoricoTarefa";
 import { getErrorMessage } from "@/utils/errorUtils";
 import { useParams } from "react-router-dom";
 import { authFetch } from "@/utils/api";
-import { getMeusProjetos } from "@/components/features/projects/projectService";
 
 type AcaoHistorico = "Add" | "Update" | "Delete" | "Create";
 
@@ -12,6 +11,7 @@ interface Editor {
   usuEmail: string;
   usuNome: string;
 }
+
 interface Alteracao {
   altId: string;
   altAcao: AcaoHistorico;
@@ -26,6 +26,14 @@ interface HistoricoPorTarefa {
   alteracoes: Alteracao[];
 }
 
+// Interface exata do ProjetoDTO baseada no seu JSON e Controller
+interface ProjetoDTO {
+  projId: string;
+  projNome: string;
+  projDescricao?: string;
+  equId?: string;
+}
+
 type CategoriaModificacao = "CRIACAO" | "EDICAO" | "EXCLUSAO";
 
 interface AuditoriaResponseDto {
@@ -34,16 +42,19 @@ interface AuditoriaResponseDto {
   responsavel: { id: string; emailResponsavel: string };
   modificacao: { categoria: CategoriaModificacao; modificacao: string };
   dataAlteracao?: string;
-  horaAlteracao?: string; 
+  horaAlteracao?: string;
   traceId?: string;
 }
 
 function mapCategoriaToAcao(c: CategoriaModificacao): AcaoHistorico {
   switch (c) {
-    case "CRIACAO": return "Create";
-    case "EXCLUSAO": return "Delete";
+    case "CRIACAO":
+      return "Create";
+    case "EXCLUSAO":
+      return "Delete";
     case "EDICAO":
-    default: return "Update";
+    default:
+      return "Update";
   }
 }
 
@@ -54,35 +65,35 @@ function parseDateTime(date?: string, time?: string): Date {
 }
 
 async function fetchAuditoriaPorProjeto(projetoId: string): Promise<AuditoriaResponseDto[]> {
-  const candidates = [
-    `/auditoria/projeto/${projetoId}`,
-    `/auditoria/logs/projeto/${projetoId}`,
-    `/auditoria/logs?projetoId=${projetoId}`,
-  ];
-
-  for (const url of candidates) {
-    try {
-      const res = await authFetch(url, { headers: { "X-Audit-Skip": "1" } });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) return data as AuditoriaResponseDto[];
-      }
-    } catch {
-      // tenta próxima rota
+  try {
+    const url = `/auditoria/logs/projeto/${encodeURIComponent(projetoId)}`;
+    const res = await authFetch(url, { headers: { "X-Audit-Skip": "1" } });
+    if (!res.ok) {
+      console.debug(`[Auditoria] ${res.status} ao buscar ${url}`);
+      return [];
     }
+    const data = await res.json();
+    return Array.isArray(data) ? (data as AuditoriaResponseDto[]) : [];
+  } catch (e) {
+    console.debug("[Auditoria] erro ao buscar logs por projeto:", e);
+    return [];
   }
-  return [];
 }
 
-// Busca os projetos do usuário logado usando a rota real do backend
-async function fetchProjetosDoUsuario(): Promise<Array<{ id: string; nome?: string }>> {
+async function fetchProjetosDoUsuario(): Promise<ProjetoDTO[]> {
   try {
-    const projetos = await getMeusProjetos();
-    return projetos.map((p: any, i: number) => ({
-      id: String(p.projId ?? p.id ?? p.projetoId ?? `proj-${i}`),
-      nome: p.projNome ?? p.nome ?? p.titulo ?? `Projeto ${i + 1}`,
-    }));
-  } catch {
+    // Chama a rota definida no BuscaProjetoController
+    const res = await authFetch("/projeto/meus-projetos");
+    
+    if (!res.ok) {
+      console.error("Erro ao buscar projetos do usuário:", res.statusText);
+      return [];
+    }
+
+    const dados = await res.json();
+    return dados as ProjetoDTO[];
+  } catch (error) {
+    console.error("Erro na requisição de projetos:", error);
     return [];
   }
 }
@@ -96,13 +107,14 @@ function mapAuditoriaParaHistorico(data: AuditoriaResponseDto[]): {
 
   for (const ev of data) {
     const tarId = String(ev.tarefaId ?? "sem-id");
-    const tarNome = `Tarefa ${tarId}`;
-
+    const tarNome = `Tarefa ${tarId}`; // Se o backend de auditoria não mandar o nome, fica genérico
+    
     const usuId = String(ev.responsavel?.id ?? "desconhecido");
     const usuEmail = ev.responsavel?.emailResponsavel ?? "sem-email";
     const usuNome = usuEmail.includes("@") ? usuEmail.split("@")[0] : `Usuário ${usuId}`;
 
     const editor: Editor = { usuId, usuEmail, usuNome };
+
     if (!responsaveisMap.has(usuId)) responsaveisMap.set(usuId, editor);
 
     const alt: Alteracao = {
@@ -120,12 +132,11 @@ function mapAuditoriaParaHistorico(data: AuditoriaResponseDto[]): {
     }
   }
 
-  // Ordena alterações por data desc
+  // Ordena alterações da mais recente para a mais antiga
   for (const item of byTask.values()) {
     item.alteracoes.sort((a, b) => b.altDataHora.getTime() - a.altDataHora.getTime());
   }
 
-  // Helper com nome descritivo
   const mostRecentChangeTime = (task: HistoricoPorTarefa): number =>
     task.alteracoes[0]?.altDataHora.getTime() ?? 0;
 
@@ -136,6 +147,20 @@ function mapAuditoriaParaHistorico(data: AuditoriaResponseDto[]): {
   return { historico, responsaveis: Array.from(responsaveisMap.values()) };
 }
 
+// Lê o projeto ativo definido pela barra lateral
+function getActiveProjectId(): string | null {
+  try {
+    const raw = localStorage.getItem("selectedProject");
+    if (raw) {
+      const obj = JSON.parse(raw);
+      if (obj?.id) return String(obj.id);
+      if (obj?.projId) return String(obj.projId);
+    }
+  } catch {}
+  const fallback = localStorage.getItem("selectedProjectId");
+  return fallback ? String(fallback) : null;
+}
+
 export default function ListaHistorico() {
   const [historico, setHistorico] = useState<HistoricoPorTarefa[]>([]);
   const [responsaveis, setResponsaveis] = useState<Editor[]>([]);
@@ -143,7 +168,8 @@ export default function ListaHistorico() {
   const [isLoading, setIsLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const { id: projetoId } = useParams<{ id: string }>();
+  // Ainda aceita :id pela URL, mas damos prioridade ao projeto ativo da barra lateral
+  const { id: projetoIdParam } = useParams<{ id: string }>();
 
   useEffect(() => {
     async function carregar() {
@@ -153,22 +179,23 @@ export default function ListaHistorico() {
       try {
         let eventos: AuditoriaResponseDto[] = [];
 
-        if (projetoId) {
-          // Modo antigo: histórico de um projeto específico
-          eventos = await fetchAuditoriaPorProjeto(projetoId);
+        const projetoAtivoId = getActiveProjectId();
+        const effectiveProjectId = projetoAtivoId ?? projetoIdParam ?? null;
+
+        if (effectiveProjectId) {
+ 
+          eventos = await fetchAuditoriaPorProjeto(effectiveProjectId);
         } else {
-          // Novo: agrega auditoria de TODOS os projetos do usuário
+          // Sem projeto ativo: agrega de todos os projetos do usuário
           const projetos = await fetchProjetosDoUsuario();
           if (projetos.length === 0) {
             setHistorico([]);
             setResponsaveis([]);
-            setErro("Nenhum projeto associado ao usuário.");
             setIsLoading(false);
             return;
           }
-
           const listas = await Promise.all(
-            projetos.map((p) => fetchAuditoriaPorProjeto(p.id))
+            projetos.map((p) => fetchAuditoriaPorProjeto(p.projId))
           );
           eventos = listas.flat();
         }
@@ -185,8 +212,14 @@ export default function ListaHistorico() {
     }
 
     carregar();
-  }, [projetoId]);
 
+    // Quando voltar o foco para a aba, revalida o projeto ativo
+    const onFocus = () => carregar();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [projetoIdParam]);
+
+  // Lógica de filtragem na UI
   const historicoFiltrado = historico
     .map(tarefa => {
       if (filtroResponsavel === "todos") {
@@ -198,7 +231,6 @@ export default function ListaHistorico() {
       return { ...tarefa, alteracoes: alteracoesFiltradas };
     })
     .filter(tarefa => tarefa.alteracoes.length > 0);
-
 
   if (isLoading) {
     return (
@@ -232,28 +264,25 @@ export default function ListaHistorico() {
     );
   }
 
-
   return (
     <div className="p-4 md:p-8">
       <div>
-        
         <div className="flex flex-col gap-4 pb-6 px-1">
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900">
               Histórico de Alterações
             </h1>
             <p className="text-gray-500 mt-1">
-              Veja todas as mudanças feitas nas tarefas.
+              Veja todas as mudanças feitas nas tarefas em seus projetos.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <label 
-              htmlFor="filtro-responsavel" 
+            <label
+              htmlFor="filtro-responsavel"
               className="text-sm font-medium text-gray-700 flex items-center gap-2"
             >
-              <i className="fa-solid fa-user text-gray-500"></i>
-              Responsável:
+              <i className="fa-solid fa-user text-gray-500"></i> Responsável:
             </label>
             <select
               id="filtro-responsavel"
@@ -262,7 +291,7 @@ export default function ListaHistorico() {
               className="block w-auto min-w-[200px] pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm"
             >
               <option value="todos">Todos</option>
-              {responsaveis.map(resp => (
+              {responsaveis.map((resp) => (
                 <option key={resp.usuId} value={resp.usuId}>
                   {resp.usuNome} ({resp.usuEmail})
                 </option>
@@ -284,11 +313,12 @@ export default function ListaHistorico() {
           ) : (
             <div className="text-center bg-white p-10 rounded-lg shadow-sm">
               <i className="fa-solid fa-filter-circle-xmark text-4xl text-slate-300 mb-3"></i>
-              <p className="text-slate-600 font-medium">Nenhum histórico encontrado para este responsável.</p>
+              <p className="text-slate-600 font-medium">
+                Nenhum histórico encontrado para este responsável.
+              </p>
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
