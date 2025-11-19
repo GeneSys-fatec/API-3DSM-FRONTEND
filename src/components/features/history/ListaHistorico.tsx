@@ -1,9 +1,9 @@
-
-
 import { useEffect, useState } from "react";
 import ItemHistoricoTarefa from "./ItemHistoricoTarefa";
 import { getErrorMessage } from "@/utils/errorUtils";
-import { useParams } from "react-router-dom"; 
+import { useParams } from "react-router-dom";
+import { authFetch } from "@/utils/api";
+import { getMeusProjetos } from "@/components/features/projects/projectService";
 
 type AcaoHistorico = "Add" | "Update" | "Delete" | "Create";
 
@@ -12,7 +12,6 @@ interface Editor {
   usuEmail: string;
   usuNome: string;
 }
-
 interface Alteracao {
   altId: string;
   altAcao: AcaoHistorico;
@@ -27,58 +26,115 @@ interface HistoricoPorTarefa {
   alteracoes: Alteracao[];
 }
 
+type CategoriaModificacao = "CRIACAO" | "EDICAO" | "EXCLUSAO";
 
-const mockEditores: Editor[] = [
-  { usuId: "1", usuEmail: "exemplo@gmail.com", usuNome: "Usuário Exemplo" },
-  { usuId: "2", usuEmail: "maria@gmail.com", usuNome: "Maria Silva" },
-  { usuId: "3", usuEmail: "joao@gmail.com", usuNome: "João Souza" },
-];
-
-const mockHistorico: HistoricoPorTarefa[] = [
-  {
-    tarId: "t1",
-    tarNome: "Tarefa 1: Desenvolver tela de login",
-    alteracoes: [
-      { altId: "h1", altAcao: "Update", altTipo: "Responsável", altEditor: mockEditores[0], altDataHora: new Date("2025-10-21T23:17:00") },
-      { altId: "h2", altAcao: "Add", altTipo: "Comentário", altEditor: mockEditores[1], altDataHora: new Date("2025-10-21T23:14:00") },
-      { altId: "h3", altAcao: "Delete", altTipo: "Anexo", altEditor: mockEditores[0], altDataHora: new Date("2025-10-21T23:14:00") },
-    ],
-  },
-  {
-    tarId: "t2",
-    tarNome: "Tarefa 2: Corrigir bug no dashboard",
-    alteracoes: [
-      { altId: "h4", altAcao: "Create", altTipo: "Tarefa", altEditor: mockEditores[2], altDataHora: new Date("2025-10-20T10:30:00") },
-    ],
-  },
-  {
-    tarId: "t3",
-    tarNome: "Tarefa 3: Otimizar consulta ao banco de dados",
-    alteracoes: [
-      { altId: "h5", altAcao: "Update", altTipo: "Prioridade", altEditor: mockEditores[1], altDataHora: new Date("2025-10-19T15:00:00") },
-      { altId: "h6", altAcao: "Add", altTipo: "Comentário", altEditor: mockEditores[2], altDataHora: new Date("2025-10-19T14:55:00") },
-    ],
-  },
-];
-
-async function getHistoricoAlteracoes(projetoId: string): Promise<HistoricoPorTarefa[]> {
-  console.log("Buscando histórico para o projeto ID:", projetoId); 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(mockHistorico);
-    }, 500);
-  });
+interface AuditoriaResponseDto {
+  projetoId: string;
+  tarefaId: string;
+  responsavel: { id: string; emailResponsavel: string };
+  modificacao: { categoria: CategoriaModificacao; modificacao: string };
+  dataAlteracao?: string;
+  horaAlteracao?: string; 
+  traceId?: string;
 }
 
-async function getResponsaveis(projetoId: string): Promise<Editor[]> {
-  console.log("Buscando responsáveis para o projeto ID:", projetoId);
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(mockEditores);
-    }, 300);
-  });
+function mapCategoriaToAcao(c: CategoriaModificacao): AcaoHistorico {
+  switch (c) {
+    case "CRIACAO": return "Create";
+    case "EXCLUSAO": return "Delete";
+    case "EDICAO":
+    default: return "Update";
+  }
 }
 
+function parseDateTime(date?: string, time?: string): Date {
+  if (date && time) return new Date(`${date}T${time}`);
+  if (date) return new Date(date);
+  return new Date();
+}
+
+async function fetchAuditoriaPorProjeto(projetoId: string): Promise<AuditoriaResponseDto[]> {
+  const candidates = [
+    `/auditoria/projeto/${projetoId}`,
+    `/auditoria/logs/projeto/${projetoId}`,
+    `/auditoria/logs?projetoId=${projetoId}`,
+  ];
+
+  for (const url of candidates) {
+    try {
+      const res = await authFetch(url, { headers: { "X-Audit-Skip": "1" } });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data as AuditoriaResponseDto[];
+      }
+    } catch {
+      // tenta próxima rota
+    }
+  }
+  return [];
+}
+
+// Busca os projetos do usuário logado usando a rota real do backend
+async function fetchProjetosDoUsuario(): Promise<Array<{ id: string; nome?: string }>> {
+  try {
+    const projetos = await getMeusProjetos();
+    return projetos.map((p: any, i: number) => ({
+      id: String(p.projId ?? p.id ?? p.projetoId ?? `proj-${i}`),
+      nome: p.projNome ?? p.nome ?? p.titulo ?? `Projeto ${i + 1}`,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function mapAuditoriaParaHistorico(data: AuditoriaResponseDto[]): {
+  historico: HistoricoPorTarefa[];
+  responsaveis: Editor[];
+} {
+  const byTask = new Map<string, HistoricoPorTarefa>();
+  const responsaveisMap = new Map<string, Editor>();
+
+  for (const ev of data) {
+    const tarId = String(ev.tarefaId ?? "sem-id");
+    const tarNome = `Tarefa ${tarId}`;
+
+    const usuId = String(ev.responsavel?.id ?? "desconhecido");
+    const usuEmail = ev.responsavel?.emailResponsavel ?? "sem-email";
+    const usuNome = usuEmail.includes("@") ? usuEmail.split("@")[0] : `Usuário ${usuId}`;
+
+    const editor: Editor = { usuId, usuEmail, usuNome };
+    if (!responsaveisMap.has(usuId)) responsaveisMap.set(usuId, editor);
+
+    const alt: Alteracao = {
+      altId: ev.traceId ?? `${tarId}-${Math.random().toString(36).slice(2)}`,
+      altAcao: mapCategoriaToAcao(ev.modificacao?.categoria ?? "EDICAO"),
+      altTipo: ev.modificacao?.modificacao ?? "Modificação",
+      altEditor: editor,
+      altDataHora: parseDateTime(ev.dataAlteracao, ev.horaAlteracao),
+    };
+
+    if (!byTask.has(tarId)) {
+      byTask.set(tarId, { tarId, tarNome, alteracoes: [alt] });
+    } else {
+      byTask.get(tarId)!.alteracoes.push(alt);
+    }
+  }
+
+  // Ordena alterações por data desc
+  for (const item of byTask.values()) {
+    item.alteracoes.sort((a, b) => b.altDataHora.getTime() - a.altDataHora.getTime());
+  }
+
+  // Helper com nome descritivo
+  const mostRecentChangeTime = (task: HistoricoPorTarefa): number =>
+    task.alteracoes[0]?.altDataHora.getTime() ?? 0;
+
+  const historico = Array.from(byTask.values()).sort(
+    (left, right) => mostRecentChangeTime(right) - mostRecentChangeTime(left)
+  );
+
+  return { historico, responsaveis: Array.from(responsaveisMap.values()) };
+}
 
 export default function ListaHistorico() {
   const [historico, setHistorico] = useState<HistoricoPorTarefa[]>([]);
@@ -90,33 +146,46 @@ export default function ListaHistorico() {
   const { id: projetoId } = useParams<{ id: string }>();
 
   useEffect(() => {
-    async function fetchData() {
+    async function carregar() {
       setIsLoading(true);
       setErro(null);
 
-      if (!projetoId) {
-        setErro("ID do projeto não encontrado na URL.");
-        setIsLoading(false);
-        return;
-      }
-
       try {
-        const [dataHistorico, dataResponsaveis] = await Promise.all([
-          getHistoricoAlteracoes(projetoId),
-          getResponsaveis(projetoId),
-        ]);
-        
-        setHistorico(dataHistorico);
-        setResponsaveis(dataResponsaveis);
-      } catch (error: unknown) {
-        console.error(error);
-        setErro(getErrorMessage(error, "Um erro inesperado ocorreu ao buscar o histórico."));
+        let eventos: AuditoriaResponseDto[] = [];
+
+        if (projetoId) {
+          // Modo antigo: histórico de um projeto específico
+          eventos = await fetchAuditoriaPorProjeto(projetoId);
+        } else {
+          // Novo: agrega auditoria de TODOS os projetos do usuário
+          const projetos = await fetchProjetosDoUsuario();
+          if (projetos.length === 0) {
+            setHistorico([]);
+            setResponsaveis([]);
+            setErro("Nenhum projeto associado ao usuário.");
+            setIsLoading(false);
+            return;
+          }
+
+          const listas = await Promise.all(
+            projetos.map((p) => fetchAuditoriaPorProjeto(p.id))
+          );
+          eventos = listas.flat();
+        }
+
+        const { historico, responsaveis } = mapAuditoriaParaHistorico(eventos);
+        setHistorico(historico);
+        setResponsaveis(responsaveis);
+      } catch (e) {
+        console.error(e);
+        setErro(getErrorMessage(e, "Erro ao carregar histórico de auditoria."));
       } finally {
         setIsLoading(false);
       }
     }
-    fetchData();
-  }, [projetoId]); 
+
+    carregar();
+  }, [projetoId]);
 
   const historicoFiltrado = historico
     .map(tarefa => {
