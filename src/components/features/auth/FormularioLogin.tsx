@@ -44,8 +44,22 @@ const FormularioLogin = () => {
       const campos = ["usuEmail", "usuSenha"];
       const errosMap: { [campo: string]: string } = {};
 
-      if (data.usuNome) {
-        logarUsuario(data.usuNome);
+      if (data.usuId) { 
+
+        const URL_BASE_BACKEND = "http://localhost:8000";
+        let fotoUrlCompleta: string | undefined = undefined;
+
+        if (data.usuCaminhoFoto) {
+          fotoUrlCompleta = `${URL_BASE_BACKEND}/usuario/foto/${data.usuCaminhoFoto}`;
+        }
+
+        logarUsuario({
+          usuId: String(data.usuId),
+          usuNome: data.usuNome || '',
+          usuEmail: data.usuEmail || '',
+          usuCaminhoFoto: fotoUrlCompleta,
+        })
+
         toast.success("Usuário logado com sucesso!");
         navigate("/home");
         return;
