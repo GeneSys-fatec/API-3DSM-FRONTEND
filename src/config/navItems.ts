@@ -15,11 +15,6 @@ export const navItems = [
     label: "Calendário",
   },
   {
-    to: "/historico",
-    iconClass: "fa-solid fa-clock-rotate-left",
-    label: "Histórico",
-  },
-  {
     to: "/info",
     iconClass: "fa-solid fa-info-circle",
     label: "Informações",

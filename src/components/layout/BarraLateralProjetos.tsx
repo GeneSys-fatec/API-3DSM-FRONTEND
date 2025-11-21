@@ -134,12 +134,8 @@ export default function BarraLateralProjetos({
 
   const handleHistory = () => {
     if (!optionsMenu.selectedId) return;
-    
-  
-  
-  
-    navigate(`/historico/${optionsMenu.selectedId}`);
-    
+    navigate("/historico", { state: { id: optionsMenu.selectedId } });
+
     optionsMenu.close();
   };
 
