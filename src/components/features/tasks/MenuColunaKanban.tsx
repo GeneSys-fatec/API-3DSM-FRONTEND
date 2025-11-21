@@ -4,12 +4,14 @@ interface MenuColunaProps {
   corAtual: string;
   onMudarCor: (novaCor: { corClasse: string; corFundo: string }) => void;
   onApagarColuna: () => void;
+  isConcluida: boolean;
 }
 
 export default function MenuColuna({
   corAtual,
   onMudarCor,
   onApagarColuna,
+  isConcluida
 }: MenuColunaProps) {
   const [aberto, setAberto] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -68,16 +70,17 @@ export default function MenuColuna({
               ></button>
             ))}
           </div>
-
-          <button
-            onClick={() => {
-              onApagarColuna();
-              setAberto(false);
-            }}
-            className="w-full text-red-600 hover:text-red-800 flex items-center justify-center gap-2 text-sm font-semibold"
-          >
-            <i className="fa-solid fa-trash-can"></i> Apagar coluna
-          </button>
+          {!isConcluida && (
+              <button
+              onClick={() => {
+                onApagarColuna();
+                setAberto(false);
+              }}
+              className="w-full text-red-600 hover:text-red-800 flex items-center justify-center gap-2 text-sm font-semibold"
+              >
+                <i className="fa-solid fa-trash-can"></i> Apagar coluna
+              </button>
+          )}
         </div>
       )}
     </div>
