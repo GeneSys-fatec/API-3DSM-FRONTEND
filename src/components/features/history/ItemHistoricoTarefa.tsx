@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { formatDateTime } from "@/utils/parseDateTime";
 import { authFetch } from "@/utils/api";
+
 type AcaoHistorico = "Add" | "Update" | "Delete" | "Create";
 
 interface Editor {
@@ -57,11 +58,17 @@ export default function ItemHistoricoTarefa({
       if (!editor) return;
       const name = String(editor.usuNome || "");
       const email = String(editor.usuEmail || "");
+      
+      // Tentativa de extrair ID de strings legadas ou placeholders
       const idFromName = name.match(/([0-9a-fA-F]{6,})/)?.[1];
       const idFromEmail = email.match(/([0-9a-fA-F]{6,})/)?.[1];
+      
       const looksLikePlaceholderName = /^Usuário\s+[0-9a-fA-F]{6,}$/.test(name) || /^[0-9a-fA-F]{6,}$/.test(name);
       const looksLikePlaceholderEmail = /^Usuário\s+[0-9a-fA-F]{6,}$/.test(email) || /^[0-9a-fA-F]{6,}$/.test(email);
+      
       const id = editor.usuId || idFromName || idFromEmail;
+      
+      // Só busca se tiver ID e o nome/email parecerem genéricos
       if (id && (looksLikePlaceholderName || looksLikePlaceholderEmail)) idsToFetch.add(id);
     });
 
@@ -76,6 +83,7 @@ export default function ItemHistoricoTarefa({
           const json = await res.json();
           fetched[id] = json.usuEmail || json.email || json.usuNome || `Usuário ${id}`;
         } catch {
+          // Ignora erros de fetch silenciosamente
         }
       }
       if (mounted && Object.keys(fetched).length) {
@@ -115,10 +123,10 @@ export default function ItemHistoricoTarefa({
             <table className="w-full min-w-[600px]">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ação</th>
-                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
-                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Editor</th>
-                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data/Hora</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-24">Ação</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Detalhes</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-48">Editor</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-40">Data/Hora</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -134,20 +142,22 @@ export default function ItemHistoricoTarefa({
                     : formatDateTime(alt.altDataHora);
                   return (
                   <tr key={alt.altId} className="hover:bg-gray-50">
-                    <td className="py-4 px-4 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap align-top">
                       <span
                         className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstiloAcao(alt.altAcao)}`}
                       >
                         {alt.altAcao}
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-sm text-gray-700 whitespace-nowrap">
+                    {/* --- AQUI ESTÁ A MUDANÇA VISUAL --- */}
+                    <td className="py-4 px-4 text-sm text-gray-700 whitespace-normal min-w-[200px] align-top">
                       {alt.altTipo}
                     </td>
-                    <td className="py-4 px-4 text-sm text-gray-700 whitespace-nowrap" title={alt.altEditor.usuEmail}>
+                    {/* ---------------------------------- */}
+                    <td className="py-4 px-4 text-sm text-gray-700 whitespace-nowrap align-top" title={alt.altEditor.usuEmail}>
                       {displayEmail}
                     </td>
-                    <td className="py-4 px-4 text-sm text-gray-500 whitespace-nowrap">
+                    <td className="py-4 px-4 text-sm text-gray-500 whitespace-nowrap align-top">
                       {displayDateTime}
                     </td>
                   </tr>
