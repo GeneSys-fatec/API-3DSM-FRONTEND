@@ -22,8 +22,7 @@ export const atualizarNomeEmail = async (usuId: string, nome: string, email: str
     const data = await response.json();
 
     if (!response.ok) {
-        const json = JSON.parse(data);
-        throw new Error(json.mensagem || "Erro ao atualizar usuário.")
+        throw new Error(data.mensagem || data.titulo || "Erro ao atualizar usuário.")
     }
 
     return data;
@@ -37,11 +36,10 @@ export const atualizarSenha = async (usuId: string, senhaAtual: string, novaSenh
         credentials: "include",
     });
 
-    const data = await response.text();
+    const data = await response.json();
 
     if (!response.ok) {
-        const json = JSON.parse(data);
-        throw new Error(json.mensagem || "Erro ao atualizar senha.")
+        throw new Error(data.mensagem || data.titulo || "Erro ao atualizar senha.")
     }
 
     return data;
