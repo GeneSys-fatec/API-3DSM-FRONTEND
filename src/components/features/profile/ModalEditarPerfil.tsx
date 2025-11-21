@@ -2,6 +2,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useModal } from "@/context/ModalContext";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
+import { atualizarFoto, atualizarNomeEmail, atualizarSenha } from "../profile/perfilService";
 
 interface CriteriosSenha {
     tamanho: boolean;
@@ -13,13 +14,14 @@ interface CriteriosSenha {
 export const ModalEditarPerfil: React.FC = () => {
     const { closeModal } = useModal();
     const modalRef = useRef<HTMLDivElement>(null);
-    const { usuNome, usuEmail } = useAuth() as any; // Remover 'as any' depois!
+    const { usuId, usuNome, usuEmail, usuCaminhoFoto, logarUsuario } = useAuth();
     const [nome, setNome] = useState(usuNome || "");
     const [email, setEmail] = useState(usuEmail || "");
     const [senhaAntiga, setSenhaAntiga] = useState("");
     const [novaSenha, setNovaSenha] = useState("");
     const [confirmarSenha, setConfirmarSenha] = useState("");
-    const [previewFoto, setPreviewFoto] = useState("");
+    const [previewFoto, setPreviewFoto] = useState(usuCaminhoFoto || "");
+    const [fotoArquivo, setFotoArquivo] = useState<File | null>(null);
     const [mostrarSenhaAntiga, setMostrarSenhaAntiga] = useState(false);
     const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
     const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
@@ -42,6 +44,11 @@ export const ModalEditarPerfil: React.FC = () => {
     const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const arquivo = e.target.files?.[0];
         if (arquivo) {
+            if (!['image/jpeg', 'image/png'].includes(arquivo.type)) {
+                toast.error("Formato inválido. Apenas .jpeg ou .png.")
+                return;
+            }
+            setFotoArquivo(arquivo)
             setPreviewFoto(URL.createObjectURL(arquivo));
         }
     };
@@ -60,18 +67,66 @@ export const ModalEditarPerfil: React.FC = () => {
         setForcaSenha(novaForca);
     };
 
-    const handleSalvar = (e: React.FormEvent) => {
+    const handleSalvar = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (novaSenha && novaSenha !== confirmarSenha) {
-            toast.error("As senhas não coincidem.");
-            return;
+        try {
+            let houveAlteracao = false;
+            let novoNome = nome;
+            let novoEmail = email;
+            let novoCaminhoFoto = usuCaminhoFoto;
+
+            if (nome !== usuNome || email !== usuEmail) {
+                const usuarioAtualizado = await atualizarNomeEmail(String(usuId), nome, email);
+                novoNome = usuarioAtualizado.usuNome || nome;
+                novoEmail = usuarioAtualizado.usuEmail || email;
+                houveAlteracao = true;
+            }
+
+            if (novaSenha) {
+                if (novaSenha !== confirmarSenha) {
+                    toast.error("As senhas não coincidem.");
+                    return;
+                }
+
+                await atualizarSenha(String(usuId), senhaAntiga, novaSenha);
+                houveAlteracao = true;
+            }
+
+            if (fotoArquivo) {
+                const usuarioAtualizado = await atualizarFoto(String(usuId), fotoArquivo);
+
+                const URL_BASE_BACKEND = "http://localhost:8000";
+                const nomeDoArquivo = usuarioAtualizado.usuCaminhoFoto;
+
+                if (nomeDoArquivo) {
+                    novoCaminhoFoto = `${URL_BASE_BACKEND}/usuario/foto/${nomeDoArquivo}`;
+                    setPreviewFoto(novoCaminhoFoto);
+                }
+
+                novoNome = usuarioAtualizado.usuNome || novoNome;
+                novoEmail = usuarioAtualizado.usuEmail || novoEmail;
+                houveAlteracao = true;
+            }
+
+            if (houveAlteracao) {
+                logarUsuario({
+                    usuId: String(usuId),
+                    usuNome: novoNome,
+                    usuEmail: novoEmail,
+                    usuCaminhoFoto: novoCaminhoFoto ?? undefined,
+                });
+
+                toast.success("Alterações salvas com sucesso!");
+                closeModal();
+
+            } else {
+                toast.info("Nenhuma alteração realizada.");
+                closeModal();
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Erro ao salvar alterações.");
         }
-
-        console.log({ nome, email, senhaAntiga, novaSenha, confirmarSenha, foto: previewFoto })
-
-        toast.success("Alterações salvas com sucesso!");
-        closeModal();
     };
 
     const forcaCores = ["text-red-500", "text-orange-500", "text-yellow-500", "text-green-500"];
@@ -126,9 +181,9 @@ export const ModalEditarPerfil: React.FC = () => {
                     <h3 className="text-gray-900 font-semibold pt-3">Senha</h3>
                     <div className="relative">
                         <i className="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input 
-                            type={mostrarSenhaAntiga ? "text" : "password"} 
-                            placeholder="Senha antiga" 
+                        <input
+                            type={mostrarSenhaAntiga ? "text" : "password"}
+                            placeholder="Senha antiga"
                             value={senhaAntiga}
                             onChange={(e) => setSenhaAntiga(e.target.value)}
                             className="w-full bg-white pl-10 pr-10 py-2 border border-gray-300 outline-none rounded-sm"

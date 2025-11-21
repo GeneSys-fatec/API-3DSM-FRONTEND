@@ -11,7 +11,10 @@ interface UsuarioLoginDTO {
 }
 
 interface AuthResponseData {
+    usuId?: string | number;
     usuNome?: string;
+    usuEmail?: string;
+    usuCaminhoFoto?: string;
     titulo?: string
     mensagem?: string;
 }
@@ -57,17 +60,17 @@ export const logout = async () => {
 }
 
 export const verificarSessao = async () => {
-  try {
-    const response = await fetch("http://localhost:8000/auth/session", {
-      method: "GET",
-      credentials: "include",
-    });
+    try {
+        const response = await fetch("http://localhost:8000/auth/session", {
+            method: "GET",
+            credentials: "include",
+        });
 
-    if (!response.ok) return null;
-    const dados = await response.json();
-    return dados;
-  } catch (erro) {
-    console.error("Erro ao verificar sessão:", erro);
-    return null;
-  }
+        if (!response.ok) return null;
+        const dados = await response.json();
+        return dados;
+    } catch (erro) {
+        console.error("Erro ao verificar sessão:", erro);
+        return null;
+    }
 }
