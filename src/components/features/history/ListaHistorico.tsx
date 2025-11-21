@@ -165,7 +165,7 @@ export default function ListaHistorico() {
 
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8 overflow-y-auto">
       <div>
         
         <div className="flex flex-col gap-4 pb-6 px-1">
