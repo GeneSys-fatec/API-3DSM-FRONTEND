@@ -93,9 +93,19 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
             })
 
             if (!response.ok) {
-                const errorData = await response.json();
-                toast.error(errorData.message || "Comentário contém palavras proibidas");
-                return;
+                const errorData = await response.json()
+
+                if (response.status === 403) {
+                    toast.error(errorData.message || "Você não tem permissão para editar este comentário.")
+                }
+                else if (response.status === 400) {
+                    toast.error(errorData.message || "O comentário contém palavras proibidas.")
+                }
+                else {
+                    toast.error(errorData.message || "Erro ao atualizar o comentário.")
+                }
+
+                return
             }
 
             toast.success("Comentário atualizado com sucesso!")
@@ -107,19 +117,46 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
         }
     }
 
+
     const excluirComentario = async () => {
-        if (!comentarioExcluindoId) {
-            return
+        if (!comentarioExcluindoId) return;
+
+        try {
+            const response = await authFetch(`http://localhost:8000/comentario/apagar/${comentarioExcluindoId}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+
+            if (!response.ok) {
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData = null;
+                }
+
+                if (response.status === 403) {
+                    toast.error(errorData?.message || "Você não tem permissão para excluir este comentário.");
+                } else {
+                    toast.error(errorData?.message || "Erro ao excluir o comentário.");
+                }
+
+                setComentarioExcluindoId(null);
+                setMostrarConfirmacao(false);
+                optionsMenu.close();
+                return;
+            }
+
+            toast.success("Comentário apagado com sucesso!");
+            setComentarioExcluindoId(null);
+            setMostrarConfirmacao(false);
+            carregarComentarios();
+            optionsMenu.close();
+        } catch (error) {
+            console.error("Erro ao excluir comentário:", error);
+            toast.error("Erro ao excluir o comentário.");
         }
-        await authFetch(`http://localhost:8000/comentario/apagar/${comentarioExcluindoId}`, {
-            method: "DELETE",
-            credentials: "include",
-        })
-        setComentarioExcluindoId(null)
-        setMostrarConfirmacao(false)
-        carregarComentarios()
-        optionsMenu.close()
-    }
+    };
 
     const confirmarExclusao = (comId: string) => {
         setComentarioExcluindoId(comId)
@@ -147,14 +184,14 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
     const renderComentario = (comentario: Comentario & { replies?: Comentario[] }, nivel = 0) => (
         <li key={comentario.comId} className={`flex flex-col w-full gap-2 text-sm ${nivel > 0 ? 'pl-8 border-l border-gray-200' : ''}`}>
             <div className="flex items-start gap-3">
-                <div className="bg-gray-300 rounded-full items-center justify-center font-bold text-gray-600 py-2 px-3">
+                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-300 font-bold text-gray-600 shrink-0">
                     {comentario.usuNome.charAt(0)?.toUpperCase()}
                 </div>
 
                 <div className="flex flex-col flex-1 w-0 min-w-64">
                     <div className="flex justify-between items-start">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-                            <p className="font-semibold leading-none">{comentario.usuNome}</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                            <p className="font-semibold text-gray-900 leading-tight">{comentario.usuNome}</p>
                             <p className="text-xs text-gray-500">
                                 {new Date(comentario.comDataAtualizacao).toLocaleDateString('pt-BR')}
                             </p>
@@ -163,7 +200,8 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
                         <div className="flex-shrink-0">
                             <i role="button" aria-label="Mais opções" title="Mais opções" tabIndex={0}
                                 onClick={(e) => optionsMenu.open(e, comentario.comId)}
-                                className={`fa-solid fa-ellipsis-vertical cursor-pointer p-2 rounded-full flex-shrink-0 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400`} />
+                                className={`fa-solid fa-ellipsis-vertical cursor-pointer p-2 rounded-full flex-shrink-0 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-400 hover:bg-gray-100`} />
+
                             {optionsMenu.isOpen && optionsMenu.selectedId === comentario.comId && optionsMenu.position && (
                                 <>
                                     <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); optionsMenu.close(); }}></div>
@@ -192,7 +230,7 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
                     </div>
 
                     {comentarioEditandoId === comentario.comId ? (
-                        <div className="flex flex-col w-full gap-2">
+                        <div className="flex flex-col w-full gap-1 mt-0.5">
                             <textarea
                                 value={novoTextoComentario}
                                 onChange={(e) => setNovoTextoComentario(e.target.value)}
@@ -208,13 +246,15 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
                             </div>
                         </div>
                     ) : (
-                        <p className="break-words">{comentario.comMensagem}</p>
+                        <p className="break-words text-gray-800 leading-relaxed -mt-0.5">
+                            {comentario.comMensagem}
+                        </p>
                     )}
 
                     {!comentarioRespondendoId && (
                         <button
                             type="button"
-                            className="flex self-start text-xs text-gray-500 gap-1 leading-none pt-1"
+                            className="flex self-start text-xs text-gray-500 gap-1 leading-none pt-2 hover:text-blue-600 font-medium"
                             onClick={() => setComentarioRespondendoId(comentario.comId)}
                         >
                             <i className="fa-solid fa-reply"></i>
@@ -257,7 +297,6 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
         </li>
     )
 
-
     const adicionarResposta = async (respostaParaId: string) => {
         try {
             if (!novaResposta.trim()) {
@@ -265,7 +304,7 @@ export default function ListaComentarios({ tarId }: ListaComentariosProps) {
                 return
             }
 
-             const response = await authFetch("http://localhost:8000/comentario/cadastrar", {
+            const response = await authFetch("http://localhost:8000/comentario/cadastrar", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
