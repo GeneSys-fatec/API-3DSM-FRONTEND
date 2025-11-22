@@ -3,7 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import ModalCriarTarefas from "./ModalCriarTarefas";
 import ModalEditarTarefas from "./ModalEditarTarefas";
 import { ModalContext } from "@/context/ModalContext";
-import type { Tarefa } from "@/types/types";
+import type { ResponsavelTarefa, Tarefa } from "@/types/types";
 import { authFetch } from "@/utils/api";
 import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 
@@ -39,6 +39,33 @@ const getPrioridadeClass = (prioridade: string | null | undefined) => {
   }
 };
 
+const AvatarCircle: React.FC<{ responsavel: ResponsavelTarefa }> = ({
+  responsavel,
+}) => (
+  <div
+    className="w-7 h-7 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold border-2 border-white"
+    title={responsavel.usuNome}
+  >
+    {responsavel.usuNome?.charAt(0)?.toUpperCase() || "?"}
+  </div>
+);
+
+const AvatarCountCircle: React.FC<{ count: number }> = ({ count }) => (
+  <div
+    className="w-7 h-7 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-xs font-bold border-2 border-white"
+    title={`${count} mais responsáveis`}
+  >
+    +{count}
+  </div>
+);
+
+type OutletContextType = {
+  selectedProjectId: string | null;
+  termoBusca: string;
+  filtrosResponsaveis: string[];
+  setUsuariosDoProjeto: (users: { id: string; name: string }[]) => void;
+};
+
 export default function ListaTarefas() {
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,9 +75,13 @@ export default function ListaTarefas() {
   );
 
   const modalContext = useContext(ModalContext);
-  const { selectedProjectId } = useOutletContext<{
-    selectedProjectId: string | null;
-  }>();
+
+  const {
+    selectedProjectId,
+    termoBusca,
+    filtrosResponsaveis,
+    setUsuariosDoProjeto,
+  } = useOutletContext<OutletContextType>();
 
   const carregarTarefas = useCallback(async () => {
     if (!selectedProjectId) {
@@ -61,26 +92,51 @@ export default function ListaTarefas() {
 
     setLoading(true);
     setError(null);
+
     try {
+      const params = new URLSearchParams();
+      params.append("projId", selectedProjectId);
+
+      if (termoBusca && termoBusca.trim() !== "") {
+        params.append("termo", termoBusca);
+      }
+
+      if (filtrosResponsaveis && filtrosResponsaveis.length > 0) {
+        params.append("responsaveis", filtrosResponsaveis.join(","));
+      }
+
       const response = await authFetch(
-        `http://localhost:8000/tarefa/por-projeto/${selectedProjectId}`
+        `http://localhost:8000/tarefa/buscar?${params.toString()}`
       );
       if (!response.ok) {
         const errorBody = await response.text();
-        throw new Error(
-          `Erro na requisição: ${response.statusText}. Resposta: ${errorBody}`
-        );
+        throw new Error(`Erro: ${response.statusText}. ${errorBody}`);
       }
 
       const data: any[] = await response.json();
+
+      if (!termoBusca && filtrosResponsaveis.length === 0) {
+        const mapUsuarios = new Map();
+
+        data.forEach((task) => {
+          if (task.responsaveis) {
+            task.responsaveis.forEach((resp: any) => {
+              mapUsuarios.set(resp.usuId, {
+                id: resp.usuId,
+                name: resp.usuNome,
+              });
+            });
+          }
+        });
+
+        setUsuariosDoProjeto(Array.from(mapUsuarios.values()));
+      }
 
       const tarefasConvertidas: Tarefa[] = data.map((item) => ({
         tarId: item.tarId,
         tarTitulo: item.tarTitulo,
         tarStatus: item.tarStatus,
-
         responsaveis: item.responsaveis || [],
-
         tarPrazo: item.tarPrazo ?? "-",
         tarPrioridade: item.tarPrioridade,
         tarDescricao: item.tarDescricao,
@@ -95,7 +151,12 @@ export default function ListaTarefas() {
     } finally {
       setLoading(false);
     }
-  }, [selectedProjectId]);
+  }, [
+    selectedProjectId,
+    termoBusca,
+    filtrosResponsaveis,
+    setUsuariosDoProjeto,
+  ]);
 
   useEffect(() => {
     carregarTarefas();
@@ -217,11 +278,14 @@ export default function ListaTarefas() {
                   <div className="flex justify-center items-center -space-x-2 px-2">
                     {tarefa.responsaveis && tarefa.responsaveis.length > 0 ? (
                       <>
-                        <span className="text-sm text-gray-800 text-center">
-                          {tarefa.responsaveis.slice(0, 2).map(r => r.usuNome).join(", ")}
-                        </span>
+                        {tarefa.responsaveis.slice(0, 2).map((r) => (
+                          <AvatarCircle key={r.usuId} responsavel={r} />
+                        ))}
+
                         {tarefa.responsaveis.length > 2 && (
-                          <span className="text-sm text-gray-800 text-center">, +{tarefa.responsaveis.length - 2}</span>
+                          <AvatarCountCircle
+                            count={tarefa.responsaveis.length - 2}
+                          />
                         )}
                       </>
                     ) : (
@@ -335,12 +399,19 @@ export default function ListaTarefas() {
                           <span className="text-gray-600 font-medium flex-shrink-0">
                             Responsável:
                           </span>
-                          <span className="text-gray-800 font-medium pl-2">
-                            {tarefa.responsaveis.slice(0, 2).map(r => r.usuNome).join(", ")}
-                          </span>
-                          {tarefa.responsaveis.length > 2 && (
-                            <span className="text-gray-800 font-medium pl-2">+{tarefa.responsaveis.length - 2}</span>
-                          )}
+
+                          <div className="flex items-center -space-x-2 pl-2">
+                            {tarefa.responsaveis &&
+                              tarefa.responsaveis.length > 0 ? (
+                              tarefa.responsaveis.map((r) => (
+                                <AvatarCircle key={r.usuId} responsavel={r} />
+                              ))
+                            ) : (
+                              <span className="text-sm text-gray-500 pt-1">
+                                -
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
