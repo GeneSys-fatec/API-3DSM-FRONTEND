@@ -43,6 +43,8 @@ export default function ColunaKanban(props: ColunaKanbanProps) {
     onFinishEditing,
     isOverlay,
   } = props;
+  
+  const isConcluida = titulo.toLowerCase() === "concluída";
 
   const { setNodeRef } = useDroppable({ id });
   const tarefasIds = tarefas.map((t) => t.tarId);
@@ -146,6 +148,7 @@ export default function ColunaKanban(props: ColunaKanbanProps) {
           corAtual={corAtual.classe}
           onMudarCor={(novaCor) => setCorAtual({ classe: novaCor.corClasse, fundo: novaCor.corFundo })}
           onApagarColuna={onApagarColuna}
+          isConcluida={isConcluida}
         />
       </div>
 

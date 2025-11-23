@@ -1,13 +1,26 @@
-
-
 import { useState } from "react";
-
 import { NavLink, useLocation } from "react-router-dom";
 import SearchBar from "./common/SearchBar";
 
-export default function NavbarProjetos() {
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
 
+type NavbarProjetosProps = {
+  termo: string;
+  setTermo: (t: string) => void;
+  idsResponsaveis: string[];
+  setIdsResponsaveis: (ids: string[]) => void;
+  usuariosDoProjeto: { id: string; name: string }[];
+};
+
+
+export default function NavbarProjetos({
+  termo,
+  setTermo,
+  idsResponsaveis,
+  setIdsResponsaveis,
+  usuariosDoProjeto
+}: NavbarProjetosProps) {
+  
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const location = useLocation();
   const isTarefasPath = location.pathname.startsWith("/tarefas");
 
@@ -21,20 +34,11 @@ export default function NavbarProjetos() {
   return (
     <>
         <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         @media (max-width: 370px) {
-        .nav-link-responsive {
-        font-size: 0.8rem; /* Tamanho da fonte ligeiramente menor que 'text-sm' */
-        }
-        .nav-links-container {
-        gap: 0.75rem; /* Diminui o espaçamento entre os links */
-        }
+            .nav-link-responsive { font-size: 0.8rem; }
+            .nav-links-container { gap: 0.75rem; }
         }
       `}</style>
 
@@ -52,10 +56,19 @@ export default function NavbarProjetos() {
               </NavLink>
             </nav>
             <div className="flex justify-end items-center gap-2">
-              {/* Desktop search bar */}
-              {isTarefasPath && <SearchBar variant="desktop" />}
+              
+              {isTarefasPath && (
+                <SearchBar 
+                    variant="desktop" 
+                    termo={termo}
+                    setTermo={setTermo}
+                    idsResponsaveis={idsResponsaveis}
+                    setIdsResponsaveis={setIdsResponsaveis}
+                    usuariosDoProjeto={usuariosDoProjeto}
+                />
+              )}
 
-              {/* Mobile search toggle button */}
+
               {isTarefasPath && (
                 <button
                   onClick={() => setIsSearchVisible(!isSearchVisible)}
@@ -65,16 +78,20 @@ export default function NavbarProjetos() {
                   <i className="fa-solid fa-magnifying-glass text-gray-600"></i>
                 </button>
               )}
-              {/* <button
-                className="p-2 h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
-                aria-label="Filtrar e ordenar tarefas"
-              >
-                <i className="fa-solid fa-arrow-down-wide-short text-gray-600"></i>
-              </button> */}
             </div>
           </div>
-          {/* Mobile Search Bar - Now controlled by SearchBar component */}
-          {isTarefasPath && <SearchBar variant="mobile" isSearchVisible={isSearchVisible} />}
+          
+          {isTarefasPath && (
+            <SearchBar 
+                variant="mobile" 
+                isSearchVisible={isSearchVisible}
+                termo={termo}
+                setTermo={setTermo}
+                idsResponsaveis={idsResponsaveis}
+                setIdsResponsaveis={setIdsResponsaveis}
+                usuariosDoProjeto={usuariosDoProjeto}
+            />
+          )}
         </div>
     </>
   );

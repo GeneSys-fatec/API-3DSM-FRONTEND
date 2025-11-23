@@ -260,11 +260,10 @@ export default function BarraLateralProjetos({
         <>
           <div className="fixed inset-0 z-40" onClick={optionsMenu.close}></div>
           <div
-            className="fixed z-50 bg-white border border-slate-200 rounded-md shadow-lg w-52 p-2"
+            className="fixed z-50 bg-white border border-slate-200 rounded-md shadow-lg w-52 p-2 transform translate-x-[1%] -translate-y-1/2 lg:translate-x-[calc(-100%-6px)] lg:-translate-y-1/2"
             style={{
               top: optionsMenu.position.top,
-              left: optionsMenu.position.left,
-              transform: "translate(calc(-100% - 6px), -50%)",
+              left: optionsMenu.position.left
             }}
             onClick={(e) => e.stopPropagation()}
           >

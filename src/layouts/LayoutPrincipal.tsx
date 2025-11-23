@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-
 import NavbarPrincipal from "../components/layout/NavbarPrincipal";
 import BarraLateral from "../components/layout/BarraLateral";
 import BarraLateralProjetos from "../components/layout/BarraLateralProjetos";
@@ -11,14 +10,25 @@ import NavbarProjetos from "../components/NavbarProjetos";
 export default function LayoutPrincipal() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModalProjetosOpen, setIsModalProjetosOpen] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null
-  );
-
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [targetEquipeId, setTargetEquipeId] = useState<string | null>(null);
+
+  const [termoBusca, setTermoBusca] = useState("");
+  const [filtrosResponsaveis, setFiltrosResponsaveis] = useState<string[]>([]);
+
+  const [usuariosDoProjeto, setUsuariosDoProjeto] = useState<{ id: string; name: string }[]>([]);
 
   const navigate = useNavigate();
   const location = useLocation();
+
+
+  useEffect(() => {
+    if (selectedProjectId) {
+      setTermoBusca("");
+      setFiltrosResponsaveis([]);
+      setUsuariosDoProjeto([]);
+    }
+  }, [selectedProjectId]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -42,7 +52,6 @@ export default function LayoutPrincipal() {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden lg:flex">
-          {" "}
           <BarraLateral />
           {!isEquipesPage && !isManualPage && (
             <BarraLateralProjetos
@@ -65,23 +74,31 @@ export default function LayoutPrincipal() {
         </div>
 
         {!isEquipesPage && !isManualPage && isSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-            onClick={toggleSidebar}
-          ></div>
+          <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={toggleSidebar}></div>
         )}
+
         <main className="p-2 md:p-4 flex-1 flex flex-col min-w-0 h-full">
-          {!isEquipesPage && !isManualPage && !isCalendarioPage  && <NavbarProjetos />}
-          <Outlet context={{ selectedProjectId }} />
+          {!isEquipesPage && !isManualPage && !isCalendarioPage && (
+            <NavbarProjetos
+              termo={termoBusca}
+              setTermo={setTermoBusca}
+              idsResponsaveis={filtrosResponsaveis}
+              setIdsResponsaveis={setFiltrosResponsaveis}
+              usuariosDoProjeto={usuariosDoProjeto}
+            />
+          )}
+
+          <Outlet context={{
+            selectedProjectId,
+            termoBusca,
+            filtrosResponsaveis,
+            setUsuariosDoProjeto
+          }} />
         </main>
       </div>
 
       {!isEquipesPage && !isManualPage && (
-        <ModalProjetos
-          isOpen={isModalProjetosOpen}
-          onClose={handleCloseModal}
-          equipeId={targetEquipeId}
-        />
+        <ModalProjetos isOpen={isModalProjetosOpen} onClose={handleCloseModal} equipeId={targetEquipeId} />
       )}
       <BottomNavbar />
     </div>
