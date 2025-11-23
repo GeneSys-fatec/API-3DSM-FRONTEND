@@ -18,29 +18,28 @@ interface FormularioTarefaProps {
   selectedProjectId?: string; // novo: projId para carregar colunas/status
 }
 
-async function baixarAnexo(tarefaId: string, nomeArquivo: string) {
-  try {
-    const res = await authFetch(
-      `http://localhost:8000/tarefa/${tarefaId}/anexos/${encodeURIComponent(
-        nomeArquivo
-      )}`
-    );
-    if (!res.ok) throw new Error("Erro ao baixar anexo");
+// async function baixarAnexo(tarefaId: string, nomeArquivo: string) {
+//   try {
+//     const res = await authFetch(
+//       `http://localhost:8000/tarefa/${tarefaId}/anexos/${encodeURIComponent(
+//         nomeArquivo
+//       )}`
+//     );
+//     if (!res.ok) throw new Error("Erro ao baixar anexo");
 
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = nomeArquivo;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error(err);
-    alert("Falha ao baixar o anexo.");
-  }
-}
+//     const blob = await res.blob();
+//     const url = window.URL.createObjectURL(blob);
+//     const a = document.createElement("a");
+//     a.href = url;
+//     a.download = nomeArquivo;
+//     a.click();
+//     window.URL.revokeObjectURL(url);
+//   } catch (err) {
+//     console.error(err);
+//     alert("Falha ao baixar o anexo.");
+//   }
+// }
 
-// --- NOVO COMPONENTE DE PÍLULA DE AVATAR ---
 const AvatarPill: React.FC<{
   responsavel: ResponsavelTarefa;
   onRemove: (e?: React.MouseEvent) => void;
@@ -63,7 +62,6 @@ const AvatarPill: React.FC<{
   </div>
 );
 
-// --- NOVO COMPONENTE DE MULTI-SELECT ---
 const MultiSelectResponsaveis: React.FC<{
   usuarios: Usuario[];
   selecionados: ResponsavelTarefa[];
@@ -73,7 +71,6 @@ const MultiSelectResponsaveis: React.FC<{
   const [filtro, setFiltro] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fecha o dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -119,8 +116,8 @@ const MultiSelectResponsaveis: React.FC<{
             key={r.usuId}
             responsavel={r}
             onRemove={(e) => {
-              e?.stopPropagation(); // Impede que o clique feche o dropdown
-              handleToggleUsuario(r as Usuario); // Reutiliza a lógica
+              e?.stopPropagation(); 
+              handleToggleUsuario(r as Usuario); 
             }}
           />
         ))}
@@ -290,15 +287,12 @@ export default function FormularioTarefa({
             </h4>
             <ul className="space-y-3">
               {anexosExistentes?.map((anexo) => {
-                const anexoUrl = `http://localhost:8000/anexos/${encodeURIComponent(
-                  anexo.arquivoNome
-                )}`;
-                const isImage = /\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(
-                  anexo.arquivoNome
-                );
+                const anexoUrl = `http://localhost:8000/anexos/tarefa/${tarefa.tarId}/${anexo}`;
+                console.log(anexo);
+                const isImage = /\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(anexo);
                 return (
                   <li
-                    key={`existente-${anexo.arquivoNome}`}
+                    key={`existente-${anexo}`}
                     className="text-sm gap-1"
                   >
                     <div className="flex items-start justify-between">
@@ -308,16 +302,16 @@ export default function FormularioTarefa({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 text-blue-600 hover:underline"
-                          title={`Abrir ${anexo.arquivoNome} em nova aba`}
+                          title={`Abrir ${anexo} em nova aba`}
                         >
-                          {getFileIcon(anexo.arquivoTipo || "")}
-                          <span className="truncate">{anexo.arquivoNome}</span>
+                          {getFileIcon(anexoUrl || "")}
+                          <span className="truncate">{anexo}</span>
                         </a>
                         {isImage && (
                           <div className="mt-1">
                             <img
                               src={anexoUrl}
-                              alt={`Preview de ${anexo.arquivoNome}`}
+                              alt={`Preview de ${anexo}`}
                               className="max-w-full h-auto max-h-32 rounded-md border object-contain cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() =>
                                 onVisualizaImagem && onVisualizaImagem(anexoUrl)

@@ -11,7 +11,7 @@ export async function uploadTaskAttachments(
     formData.append("file", arquivo);
 
     const uploadRes = await authFetch(
-      `http://localhost:8000/tarefa/${tarId}/upload`,
+      `http://localhost:8000/anexos/tarefa/${tarId}/upload`,
       { method: "POST", body: formData }
     );
 

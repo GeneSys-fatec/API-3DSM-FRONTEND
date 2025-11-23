@@ -36,7 +36,7 @@ function App() {
                   <Route path="/calendario" element={<Calendario />} />
                   <Route path="/tarefas" element={<Tarefas />} />
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/historico/:id" element={<Historico />} />
+                  <Route path="/historico" element={<Historico />} />
                   <Route path="/info" element={<ManualUsuario />} />
                 </Route>
               </Route>
