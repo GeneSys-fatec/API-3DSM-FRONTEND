@@ -9,6 +9,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Tarefa } from "@/types/types";
+import MenuColuna from "./MenuColunaKanban";
 
 interface ColunaKanbanProps {
   id: string;
@@ -42,13 +43,19 @@ export default function ColunaKanban(props: ColunaKanbanProps) {
     onFinishEditing,
     isOverlay,
   } = props;
+  
+  const isConcluida = titulo.toLowerCase() === "concluída";
 
   const { setNodeRef } = useDroppable({ id });
-
   const tarefasIds = tarefas.map((t) => t.tarId);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const [tempTitle, setTempTitle] = useState(titulo);
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  const [corAtual, setCorAtual] = useState({
+    classe: corClasse,
+    fundo: corFundo,
+  });
 
   const {
     attributes,
@@ -58,17 +65,22 @@ export default function ColunaKanban(props: ColunaKanbanProps) {
     transition,
     isDragging,
   } = useSortable({
-    id: id,
+    id,
     data: {
       type: "column",
-      coluna: props,
+      coluna: {
+        ...props,
+        corClasse: corAtual.classe,
+        corFundo: corAtual.fundo,
+      },
     },
-    disabled: isEditing || !isDesktop,
+    disabled: isEditing,
   });
+
   const style = {
     transition,
     transform: CSS.Transform.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.7 : 1,
   };
 
   const mapaDeCoresBorda: { [key: string]: string } = {
@@ -78,8 +90,8 @@ export default function ColunaKanban(props: ColunaKanbanProps) {
     "purple-400": "border-purple-400",
     "red-400": "border-red-400",
   };
-  
-  const classeBordaHeader = mapaDeCoresBorda[corClasse] || "border-gray-400";
+
+  const classeBordaHeader = mapaDeCoresBorda[corAtual.classe] || "border-gray-400";
 
   useEffect(() => {
     setTempTitle(titulo);
@@ -102,17 +114,15 @@ export default function ColunaKanban(props: ColunaKanbanProps) {
       }}
       style={style}
       {...attributes}
-      className={`
-    flex flex-col w-full lg:w-96 lg:flex-shrink-0 bg-gray-100 rounded-lg max-h-[80vh] lg:h-full shadow-md
-    ${isOverlay ? "ring-2 ring-indigo-500" : ""}
-  `}
+      className={`flex flex-col w-full lg:w-96 lg:flex-shrink-0 bg-gray-100 rounded-lg max-h-[80vh] lg:h-full shadow-md ${isOverlay ? "ring-2 ring-indigo-500" : ""
+        }`}
     >
       <div
         {...listeners}
-        className={`group p-3 border-t-4 ${classeBordaHeader} rounded-t-lg ${corFundo} flex items-center justify-between 
-      ${isDesktop ? "cursor-grab active:cursor-grabbing" : ""} 
-    `}
+        className={`group p-3 border-t-4 ${classeBordaHeader} rounded-t-lg ${corAtual.fundo} flex items-center justify-between touch-none ${isDesktop ? "cursor-grab active:cursor-grabbing" : ""}`}
+        style={{ touchAction: "none" }}
       >
+
         {isEditing ? (
           <input
             type="text"
@@ -127,30 +137,22 @@ export default function ColunaKanban(props: ColunaKanbanProps) {
           />
         ) : (
           <h2
-            className="text-lg font-bold tracking-wider text-gray-800 antialiased"
+            className="text-lg font-bold tracking-wider text-gray-800 antialiased truncate"
             onDoubleClick={() => onStartEditing(id)}
           >
             {titulo}
           </h2>
         )}
 
-        <button
-          className="
-            flex items-center justify-center
-            w-7 h-7
-            text-gray-600/70 hover:text-gray-900
-            hover:bg-black/10
-            rounded-full
-            opacity-100 lg:opacity-0 lg:group-hover:opacity-100 
-            transition-all duration-200"
-          aria-label="Apagar coluna"
-          onClick={onApagarColuna}
-        >
-          <i className="fa-solid fa-xmark fa-lg"></i>
-        </button>
+        <MenuColuna
+          corAtual={corAtual.classe}
+          onMudarCor={(novaCor) => setCorAtual({ classe: novaCor.corClasse, fundo: novaCor.corFundo })}
+          onApagarColuna={onApagarColuna}
+          isConcluida={isConcluida}
+        />
       </div>
 
-      <div className="p-4 flex flex-col gap-4 overflow-y-auto">
+      <div className="p-4 flex flex-col gap-4 overflow-y-auto bg-gray-50 rounded-b-lg">
         <SortableContext
           items={tarefasIds}
           strategy={verticalListSortingStrategy}
@@ -160,11 +162,12 @@ export default function ColunaKanban(props: ColunaKanbanProps) {
               key={tarefa.tarId}
               tarefa={tarefa}
               onAbrirModalEdicao={onAbrirModalEdicao}
-              corClasse={corClasse}
+              corClasse={corAtual.classe}
               onExcluir={onExcluirTarefa}
             />
           ))}
         </SortableContext>
+
         <button
           className="mt-2 text-left p-2 text-gray-500 hover:bg-gray-200 rounded-md transition-colors"
           onClick={onAbrirModalCriacao}

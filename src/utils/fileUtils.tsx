@@ -162,7 +162,7 @@ export function validateAttachments(
   }
 
   if (total > totalMaxBytes) {
-    errors.push(`O tamanho total dos anexos (${formatFileSize(total)}) excede ${maxTotalSizeMB} MB permitidos.`);
+    errors.push(`O tamanho total dos anexos (${formatFileSize(total)}) excede o máximo permitido.`);
   }
 
   return { valid: errors.length === 0, errors };

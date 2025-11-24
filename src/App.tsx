@@ -14,6 +14,10 @@ import { ModalProvider } from "./context/ModalContext";
 import ModalRenderer from "./components/ModalRenderer";
 import { AuthProvider } from "./context/AuthContext";
 import RotaProtegida from "./components/common/RotaProtegida";
+import Historico from "./pages/Historico";
+import RecuperacaoSenha from "./pages/RecuperacaoSenha";
+import ManualUsuario from "./components/features/userManual/ManualUsuario";
+
 
 function App() {
   return (
@@ -32,8 +36,11 @@ function App() {
                   <Route path="/calendario" element={<Calendario />} />
                   <Route path="/tarefas" element={<Tarefas />} />
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/historico" element={<Historico />} />
+                  <Route path="/info" element={<ManualUsuario />} />
                 </Route>
               </Route>
+              <Route path="/recuperacao-senha" element={<RecuperacaoSenha/>}></Route>
             </Routes>
             <ModalRenderer />
           </ModalProvider>

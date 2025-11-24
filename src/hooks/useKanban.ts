@@ -23,10 +23,10 @@ export function useKanban(selectedProjectId: string | null) {
     try {
       const [colunasResponse, tarefasResponse] = await Promise.all([
         authFetch(
-          `http://localhost:8080/colunas/por-projeto/${selectedProjectId}`
+          `http://localhost:8000/colunas/por-projeto/${selectedProjectId}`
         ),
         authFetch(
-          `http://localhost:8080/tarefa/por-projeto/${selectedProjectId}`
+          `http://localhost:8000/tarefa/por-projeto/${selectedProjectId}`
         ),
       ]);
 

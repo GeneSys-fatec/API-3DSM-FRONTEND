@@ -2,7 +2,7 @@
 import { authFetch } from "@/utils/api";
 import type { EquipeComProjetos } from "@/types/types";
 
-const API_URL = "http://localhost:8080/equipe";
+const API_URL = "http://localhost:8000/equipe";
 
 export const getMinhasEquipes = async (): Promise<EquipeComProjetos[]> => {
   const response = await authFetch(`${API_URL}/minhas-equipes`);

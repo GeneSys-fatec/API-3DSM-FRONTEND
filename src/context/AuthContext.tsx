@@ -2,18 +2,24 @@ import React, { createContext, useState, useContext, ReactNode, useCallback, use
 import { logout, verificarSessao } from '@/components/features/auth/authService';
 
 interface EstadoAuth {
+  usuId: string | null;
   usuNome: string | null;
+  usuEmail: string | null;
+  usuCaminhoFoto?: string | null;
   autenticado: boolean;
 }
 
 interface TipoAuthContexto extends EstadoAuth {
-  logarUsuario: (usuNome: string) => void;
+  logarUsuario: (usuario: { usuId: string; usuNome: string; usuEmail: string; usuCaminhoFoto?: string }) => void;
   deslogarUsuario: (navegar: (caminho: string) => void) => void;
   carregando: boolean;
 }
 
 const estadoInicial: EstadoAuth = {
+  usuId: null,
   usuNome: null,
+  usuEmail: null,
+  usuCaminhoFoto: null,
   autenticado: false,
 };
 
@@ -33,8 +39,16 @@ export const AuthProvider: React.FC<PropsAuthProvider> = ({ children }) => {
   const [estado, setEstado] = useState<EstadoAuth>(estadoInicial);
   const [carregando, setCarregando] = useState(true);
 
-  const logarUsuario = useCallback((usuNome: string) => {
-    setEstado({ usuNome, autenticado: true });
+  const logarUsuario = useCallback((usuario: {
+    usuId: string, usuNome: string, usuEmail: string, usuCaminhoFoto?: string
+  }) => {
+    setEstado({
+      usuId: usuario.usuId,
+      usuNome: usuario.usuNome,
+      usuEmail: usuario.usuEmail,
+      usuCaminhoFoto: usuario.usuCaminhoFoto,
+      autenticado: true
+    });
   }, []);
 
   const deslogarUsuario = useCallback(async (navegar: (caminho: string) => void) => {
@@ -48,11 +62,23 @@ export const AuthProvider: React.FC<PropsAuthProvider> = ({ children }) => {
     }
   }, []);
 
+  const URL_BASE_BACKEND = "http://localhost:8000";
+
   useEffect(() => {
     const checarSessao = async () => {
       const dados = await verificarSessao();
-      if (dados?.usuNome) {
-        setEstado({ usuNome: dados.usuNome, autenticado: true });
+      if (dados?.usuId) {
+        let fotoUrlCompleta: string | undefined = undefined;
+        if (dados.usuCaminhoFoto) {
+          fotoUrlCompleta = `${URL_BASE_BACKEND}/usuario/foto/${dados.usuCaminhoFoto}`;
+        }
+        setEstado({
+          usuId: String(dados.usuId),
+          usuNome: dados.usuNome,
+          usuEmail: dados.usuEmail,
+          usuCaminhoFoto: fotoUrlCompleta, 
+          autenticado: true
+        });
       } else {
         setEstado(estadoInicial);
       }

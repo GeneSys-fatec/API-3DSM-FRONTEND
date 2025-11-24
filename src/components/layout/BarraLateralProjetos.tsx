@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import ModalEditarProjetos from "../features/projects/ModalEditarProjetos";
 import { authFetch } from "@/utils/api";
@@ -5,8 +6,10 @@ import type { Projeto, Equipe } from "@/types/types";
 import { useOptionsMenu } from "@/hooks/useOptionsMenu";
 import ProjetoItem from "../features/projects/ProjetoItem";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 import { getMinhasEquipes } from "../features/teams/teamService";
+import { getMeusProjetos } from "../features/projects/projectService";
 
 interface EquipeComProjetos extends Equipe {
   projetos: Projeto[];
@@ -36,22 +39,45 @@ export default function BarraLateralProjetos({
     null
   );
   const optionsMenu = useOptionsMenu();
+  const navigate = useNavigate();
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const equipesComProjetosDoBackend = await getMinhasEquipes();
+      const [equipes, projetos] = await Promise.all([
+        getMinhasEquipes(),
+        getMeusProjetos(),
+      ]);
+      const projetosPorEquipe = new Map<string, Projeto[]>();
+      for (const projeto of projetos) {
+        if (!projeto.equId) continue; 
+        if (!projetosPorEquipe.has(projeto.equId)) {
+          projetosPorEquipe.set(projeto.equId, []);
+        }
+        projetosPorEquipe.get(projeto.equId)!.push(projeto);
+      }
 
-      setEquipesComProjetos(equipesComProjetosDoBackend);
+      const equipesComProjetos: EquipeComProjetos[] = equipes.map((equipe) => ({
+        ...equipe,
+        projetos: projetosPorEquipe.get(equipe.equId) || [],
+      }));
 
-      const primeiroProjeto = equipesComProjetosDoBackend[0]?.projetos[0];
-      if (primeiroProjeto && !activeProjectId) {
-        const firstProjectId = primeiroProjeto.projId;
-        setActiveProjectId(firstProjectId);
-        onProjectSelect(firstProjectId);
-      } else if (!primeiroProjeto) {
+      setEquipesComProjetos(equipesComProjetos);
+
+      const primeiroProjeto = equipesComProjetos[0]?.projetos[0];
+      
+      if (primeiroProjeto) {
+        setActiveProjectId(currentId => {
+          if (currentId === null) { 
+            onProjectSelect(primeiroProjeto.projId);
+            return primeiroProjeto.projId;
+          }
+          return currentId; 
+        });
+      } else {
         onProjectSelect(null);
       }
+
     } catch (error: unknown) {
       console.error(error);
       toast.error(
@@ -61,6 +87,7 @@ export default function BarraLateralProjetos({
       setIsLoading(false);
     }
   }, [activeProjectId, onProjectSelect]);
+  
   useEffect(() => {
     fetchData();
     const handleDataChange = () => fetchData();
@@ -87,7 +114,7 @@ export default function BarraLateralProjetos({
     try {
       setIsDeleting(true);
       await authFetch(
-        `http://localhost:8080/projeto/apagar/${encodeURIComponent(
+        `http://localhost:8000/projeto/apagar/${encodeURIComponent(
           optionsMenu.selectedId
         )}`,
         { method: "DELETE", credentials: "include", }
@@ -105,7 +132,15 @@ export default function BarraLateralProjetos({
     }
   };
 
+  const handleHistory = () => {
+    if (!optionsMenu.selectedId) return;
+    navigate("/historico", { state: { id: optionsMenu.selectedId } });
+
+    optionsMenu.close();
+  };
+
   if (isLoading) {
+  
     return (
       <div
         className={`fixed lg:static h-full bg-white border-r border-slate-200 flex flex-col z-40 transition-transform lg:transition-all duration-300 ease-in-out ${
@@ -121,10 +156,12 @@ export default function BarraLateralProjetos({
 
   return (
     <div
+    
       className={`group fixed lg:static h-full bg-white border-r border-slate-200 flex flex-col z-40 transition-transform lg:transition-all duration-300 ease-in-out ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       } lg:translate-x-0 lg:w-16 lg:hover:w-64`}
     >
+      
       <div
         onClick={onClose}
         className="hidden lg:flex items-center justify-center w-6 h-6 rounded-full absolute -right-3 top-1/2 -translate-y-1/2 cursor-pointer bg-white border border-slate-200 hover:bg-indigo-100 group-hover:bg-indigo-100 transition-all duration-300"
@@ -136,6 +173,7 @@ export default function BarraLateralProjetos({
         ></i>
       </div>
 
+      
       <div className="p-4 border-b border-slate-200 flex items-center gap-3 overflow-hidden">
         <i className="fa-solid fa-folder-open text-indigo-600 text-2xl"></i>
         <h2
@@ -147,6 +185,7 @@ export default function BarraLateralProjetos({
         </h2>
       </div>
 
+      
       <div className="p-4 overflow-y-auto overflow-x-hidden flex-1">
         {equipesComProjetos.length === 0 && !isLoading && (
           <div
@@ -221,11 +260,10 @@ export default function BarraLateralProjetos({
         <>
           <div className="fixed inset-0 z-40" onClick={optionsMenu.close}></div>
           <div
-            className="fixed z-50 bg-white border border-slate-200 rounded-md shadow-lg w-44 p-2"
+            className="fixed z-50 bg-white border border-slate-200 rounded-md shadow-lg w-52 p-2 transform translate-x-[1%] -translate-y-1/2 lg:translate-x-[calc(-100%-6px)] lg:-translate-y-1/2"
             style={{
               top: optionsMenu.position.top,
-              left: optionsMenu.position.left,
-              transform: "translate(calc(-100% - 6px), -50%)",
+              left: optionsMenu.position.left
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -233,15 +271,24 @@ export default function BarraLateralProjetos({
               onClick={handleEdit}
               className="w-full text-left px-3 py-2 rounded hover:bg-slate-100 flex items-center gap-2"
             >
-              <i className="fa-solid fa-pen text-slate-600"></i>
+              <i className="fa-solid fa-pen text-slate-600 w-4 text-center"></i>
               <span>Editar</span>
             </button>
+
+            <button
+              onClick={handleHistory}
+              className="w-full text-left px-3 py-2 rounded hover:bg-slate-100 flex items-center gap-2"
+            >
+              <i className="fa-solid fa-history text-slate-600 w-4 text-center"></i>
+              <span>Histórico de alterações</span>
+            </button>
+
             <button
               onClick={handleDelete}
               disabled={isDeleting}
               className="w-full text-left px-3 py-2 rounded hover:bg-red-50 text-red-700 flex items-center gap-2 disabled:opacity-60"
             >
-              <i className="fa-solid fa-trash"></i>
+              <i className="fa-solid fa-trash w-4 text-center"></i>
               <span>{isDeleting ? "Excluindo..." : "Excluir"}</span>
             </button>
           </div>
@@ -249,6 +296,7 @@ export default function BarraLateralProjetos({
       )}
 
       {isEditModalOpen && projetoParaEditar && (
+      
         <ModalEditarProjetos
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}

@@ -11,7 +11,10 @@ interface UsuarioLoginDTO {
 }
 
 interface AuthResponseData {
+    usuId?: string | number;
     usuNome?: string;
+    usuEmail?: string;
+    usuCaminhoFoto?: string;
     titulo?: string
     mensagem?: string;
 }
@@ -22,7 +25,7 @@ interface ServiceResponse {
 }
 
 export const cadastrar = async (novoUsuario: UsuarioCadastroDTO): Promise<ServiceResponse> => {
-    const response = await fetch("http://localhost:8080/auth/cadastrar", {
+    const response = await fetch("http://localhost:8000/auth/cadastrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(novoUsuario),
@@ -32,7 +35,7 @@ export const cadastrar = async (novoUsuario: UsuarioCadastroDTO): Promise<Servic
 }
 
 export const login = async (usuario: UsuarioLoginDTO): Promise<AuthResponseData> => {
-    const response = await fetch("http://localhost:8080/auth/login", {
+    const response = await fetch("http://localhost:8000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -46,7 +49,7 @@ export const login = async (usuario: UsuarioLoginDTO): Promise<AuthResponseData>
 
 export const logout = async () => {
     try {
-        await fetch("http://localhost:8080/auth/logout", {
+        await fetch("http://localhost:8000/auth/logout", {
             method: "POST",
             credentials: "include",
         });
@@ -57,17 +60,17 @@ export const logout = async () => {
 }
 
 export const verificarSessao = async () => {
-  try {
-    const response = await fetch("http://localhost:8080/auth/session", {
-      method: "GET",
-      credentials: "include",
-    });
+    try {
+        const response = await fetch("http://localhost:8000/auth/session", {
+            method: "GET",
+            credentials: "include",
+        });
 
-    if (!response.ok) return null;
-    const dados = await response.json();
-    return dados;
-  } catch (erro) {
-    console.error("Erro ao verificar sessão:", erro);
-    return null;
-  }
+        if (!response.ok) return null;
+        const dados = await response.json();
+        return dados;
+    } catch (erro) {
+        console.error("Erro ao verificar sessão:", erro);
+        return null;
+    }
 }

@@ -49,22 +49,58 @@ export default function ModalEditarTarefas({
     useState<AnexoParaExcluir>(null);
 
   useEffect(() => {
-    if (projId) {
-      //
-      authFetch(`http://localhost:8080/projeto/${projId}/membros`) //
-        .then((res) => res.json())
-        .then(setUsuarios)
-        .catch((err) =>
-          console.error("Erro ao buscar usuários do projeto:", err)
+    
+    const fetchMembrosDaEquipe = async () => {
+      if (!projId) {
+        console.warn("ID do projeto não fornecido para o modal de edição.");
+        setUsuarios([]);
+        return;
+      }
+      
+      try {
+        const projetoResponse = await authFetch(
+          `http://localhost:8000/projeto/${projId}`
         );
-    } else {
-      console.warn("ID do projeto não fornecido para o modal de edição.");
-    }
+        if (!projetoResponse.ok) {
+          throw new Error("Falha ao buscar detalhes do projeto");
+        }
+        
+        const projeto: { equId: string } = await projetoResponse.json(); 
+        const equipeId = projeto.equId;
 
-    authFetch(`http://localhost:8080/tarefa/${tarefaInicial.tarId}/anexos`) //
+        if (!equipeId) {
+          throw new Error("Projeto não tem um ID de equipe associado.");
+        }
+
+        const equipeResponse = await authFetch(
+          `http://localhost:8000/equipe/${equipeId}`
+        );
+        if (!equipeResponse.ok) {
+          throw new Error("Falha ao buscar dados da equipe");
+        }
+        
+        const equipe: { equMembros: Usuario[] } = await equipeResponse.json(); 
+
+        if (equipe.equMembros) {
+          setUsuarios(equipe.equMembros);
+        } else {
+          console.warn("Objeto 'equipe' não contém 'equMembros'", equipe);
+          setUsuarios([]);
+        }
+        
+      } catch (err) {
+        console.error("Erro ao buscar usuários para o modal de edição:", err);
+        setUsuarios([]);
+      }
+    };
+
+    authFetch(`http://localhost:8000/anexos/tarefa/${tarefaInicial.tarId}`) //
       .then((res) => res.json())
       .then(setAnexosExistentes)
       .catch((err) => console.error("Erro ao buscar anexos:", err));
+
+    fetchMembrosDaEquipe();
+    
   }, [tarefaInicial.tarId, projId]);
 
   const MAX_FILES = 10;
@@ -193,7 +229,7 @@ export default function ModalEditarTarefas({
 
     try {
       await authFetch(
-        `http://localhost:8080/tarefa/${
+        `http://localhost:8000/tarefa/${
           tarefa.tarId
         }/anexos/${encodeURIComponent(nomeArquivo)}`,
         { method: "DELETE", credentials: "include" }
@@ -246,7 +282,7 @@ export default function ModalEditarTarefas({
 
     try {
       const res = await authFetch(
-        `http://localhost:8080/tarefa/atualizar/${tarefa.tarId}`,
+        `http://localhost:8000/tarefa/atualizar/${tarefa.tarId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

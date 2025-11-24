@@ -59,6 +59,13 @@ const AvatarCountCircle: React.FC<{ count: number }> = ({ count }) => (
   </div>
 );
 
+type OutletContextType = {
+  selectedProjectId: string | null;
+  termoBusca: string;
+  filtrosResponsaveis: string[];
+  setUsuariosDoProjeto: (users: { id: string; name: string }[]) => void;
+};
+
 export default function ListaTarefas() {
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,9 +75,13 @@ export default function ListaTarefas() {
   );
 
   const modalContext = useContext(ModalContext);
-  const { selectedProjectId } = useOutletContext<{
-    selectedProjectId: string | null;
-  }>();
+
+  const {
+    selectedProjectId,
+    termoBusca,
+    filtrosResponsaveis,
+    setUsuariosDoProjeto,
+  } = useOutletContext<OutletContextType>();
 
   const carregarTarefas = useCallback(async () => {
     if (!selectedProjectId) {
@@ -81,26 +92,51 @@ export default function ListaTarefas() {
 
     setLoading(true);
     setError(null);
+
     try {
+      const params = new URLSearchParams();
+      params.append("projId", selectedProjectId);
+
+      if (termoBusca && termoBusca.trim() !== "") {
+        params.append("termo", termoBusca);
+      }
+
+      if (filtrosResponsaveis && filtrosResponsaveis.length > 0) {
+        params.append("responsaveis", filtrosResponsaveis.join(","));
+      }
+
       const response = await authFetch(
-        `http://localhost:8080/tarefa/por-projeto/${selectedProjectId}`
+        `http://localhost:8000/tarefa/buscar?${params.toString()}`
       );
       if (!response.ok) {
         const errorBody = await response.text();
-        throw new Error(
-          `Erro na requisição: ${response.statusText}. Resposta: ${errorBody}`
-        );
+        throw new Error(`Erro: ${response.statusText}. ${errorBody}`);
       }
 
       const data: any[] = await response.json();
+
+      if (!termoBusca && filtrosResponsaveis.length === 0) {
+        const mapUsuarios = new Map();
+
+        data.forEach((task) => {
+          if (task.responsaveis) {
+            task.responsaveis.forEach((resp: any) => {
+              mapUsuarios.set(resp.usuId, {
+                id: resp.usuId,
+                name: resp.usuNome,
+              });
+            });
+          }
+        });
+
+        setUsuariosDoProjeto(Array.from(mapUsuarios.values()));
+      }
 
       const tarefasConvertidas: Tarefa[] = data.map((item) => ({
         tarId: item.tarId,
         tarTitulo: item.tarTitulo,
         tarStatus: item.tarStatus,
-
         responsaveis: item.responsaveis || [],
-
         tarPrazo: item.tarPrazo ?? "-",
         tarPrioridade: item.tarPrioridade,
         tarDescricao: item.tarDescricao,
@@ -115,7 +151,12 @@ export default function ListaTarefas() {
     } finally {
       setLoading(false);
     }
-  }, [selectedProjectId]);
+  }, [
+    selectedProjectId,
+    termoBusca,
+    filtrosResponsaveis,
+    setUsuariosDoProjeto,
+  ]);
 
   useEffect(() => {
     carregarTarefas();
@@ -126,7 +167,7 @@ export default function ListaTarefas() {
 
     try {
       const response = await authFetch(
-        `http://localhost:8080/tarefa/apagar/${tarefaParaExcluir}`,
+        `http://localhost:8000/tarefa/apagar/${tarefaParaExcluir}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -318,7 +359,7 @@ export default function ListaTarefas() {
                           <span className="text-gray-500">#{index + 1}</span> -{" "}
                           {tarefa.tarTitulo}
                         </h3>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                           <span
                             className={`px-3 py-1 text-sm font-bold rounded-full uppercase ${getPrioridadeClass(
                               tarefa.tarPrioridade
@@ -354,14 +395,14 @@ export default function ListaTarefas() {
                     </div>
                     <div className="space-y-2 text-base">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-start min-w-0 flex-1">
-                          <span className="text-gray-600 font-medium flex-shrink-0 pt-1">
+                        <div className="flex items-center min-w-0 flex-1 pt-1">
+                          <span className="text-gray-600 font-medium flex-shrink-0">
                             Responsável:
                           </span>
 
                           <div className="flex items-center -space-x-2 pl-2">
                             {tarefa.responsaveis &&
-                            tarefa.responsaveis.length > 0 ? (
+                              tarefa.responsaveis.length > 0 ? (
                               tarefa.responsaveis.map((r) => (
                                 <AvatarCircle key={r.usuId} responsavel={r} />
                               ))
@@ -393,7 +434,7 @@ export default function ListaTarefas() {
               ))}
             </div>
           </div>
-          <div className="fixed bottom-20 left-4 right-4 z-50">
+          <div className="fixed bottom-20 left-4 right-4">
             <div className="bg-white border-t border-gray-200 p-3 rounded-lg shadow-lg">
               <button
                 onClick={abrirModalCriacao}

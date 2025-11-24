@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-
 import NavbarPrincipal from "../components/layout/NavbarPrincipal";
 import BarraLateral from "../components/layout/BarraLateral";
 import BarraLateralProjetos from "../components/layout/BarraLateralProjetos";
@@ -11,14 +10,27 @@ import NavbarProjetos from "../components/NavbarProjetos";
 export default function LayoutPrincipal() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModalProjetosOpen, setIsModalProjetosOpen] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null
-  );
-
+  
+  // O estado que guarda o ID do projeto selecionado
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  
   const [targetEquipeId, setTargetEquipeId] = useState<string | null>(null);
+
+  const [termoBusca, setTermoBusca] = useState("");
+  const [filtrosResponsaveis, setFiltrosResponsaveis] = useState<string[]>([]);
+
+  const [usuariosDoProjeto, setUsuariosDoProjeto] = useState<{ id: string; name: string }[]>([]);
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (selectedProjectId) {
+      setTermoBusca("");
+      setFiltrosResponsaveis([]);
+      setUsuariosDoProjeto([]);
+    }
+  }, [selectedProjectId]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -34,6 +46,7 @@ export default function LayoutPrincipal() {
 
   const isEquipesPage = location.pathname.startsWith("/equipes");
   const isCalendarioPage = location.pathname.startsWith("/calendario");
+  const isManualPage = location.pathname.startsWith("/info");
 
   return (
     <div className="bg-slate-50 h-screen flex flex-col">
@@ -41,9 +54,8 @@ export default function LayoutPrincipal() {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden lg:flex">
-          {" "}
           <BarraLateral />
-          {!isEquipesPage && (
+          {!isEquipesPage && !isManualPage && (
             <BarraLateralProjetos
               isOpen={isSidebarOpen}
               onClose={toggleSidebar}
@@ -52,9 +64,8 @@ export default function LayoutPrincipal() {
             />
           )}
         </div>
-
         <div className="lg:hidden">
-          {!isEquipesPage && (
+          {!isEquipesPage && !isManualPage && (
             <BarraLateralProjetos
               isOpen={isSidebarOpen}
               onClose={toggleSidebar}
@@ -64,27 +75,36 @@ export default function LayoutPrincipal() {
           )}
         </div>
 
-        {!isEquipesPage && isSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-            onClick={toggleSidebar}
-          ></div>
+        {!isEquipesPage && !isManualPage && isSidebarOpen && (
+          <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={toggleSidebar}></div>
         )}
 
         <main className="p-2 md:p-4 flex-1 flex flex-col min-w-0 h-full">
-          {!isEquipesPage && !isCalendarioPage && <NavbarProjetos />}
-          <Outlet context={{ selectedProjectId }} />
+          {!isEquipesPage && !isManualPage && !isCalendarioPage && (
+            <NavbarProjetos
+              termo={termoBusca}
+              setTermo={setTermoBusca}
+              idsResponsaveis={filtrosResponsaveis}
+              setIdsResponsaveis={setFiltrosResponsaveis}
+              usuariosDoProjeto={usuariosDoProjeto}
+              // ADICIONADO: Passando o ID do projeto para a Navbar
+              selectedProjectId={selectedProjectId} 
+            />
+          )}
+
+          <Outlet context={{
+            selectedProjectId,
+            termoBusca,
+            filtrosResponsaveis,
+            setUsuariosDoProjeto
+          }} />
         </main>
       </div>
 
-      {!isEquipesPage && (
-        <ModalProjetos
-          isOpen={isModalProjetosOpen}
-          onClose={handleCloseModal}
-          equipeId={targetEquipeId}
-        />
+      {!isEquipesPage && !isManualPage && (
+        <ModalProjetos isOpen={isModalProjetosOpen} onClose={handleCloseModal} equipeId={targetEquipeId} />
       )}
-      {!isEquipesPage && <BottomNavbar />}
+      <BottomNavbar />
     </div>
   );
 }
