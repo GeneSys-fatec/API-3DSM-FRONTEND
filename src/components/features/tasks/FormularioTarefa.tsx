@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getFileIcon } from "@/utils/fileUtils";
-// <<< MUDANÇA: Importar ResponsavelTarefa e ícones
 import type { Tarefa, Usuario, Anexo, ResponsavelTarefa } from "@/types/types";
 import { authFetch } from "@/utils/api";
 import { X, ChevronDown, Search } from "lucide-react";
@@ -15,30 +14,30 @@ interface FormularioTarefaProps {
   handleRemoveAnexo: (file: File) => void;
   handleRemoverAnexoExistente?: (nomeArquivo: string) => void;
   onVisualizaImagem?: (url: string) => void;
-  selectedProjectId?: string; // novo: projId para carregar colunas/status
+  selectedProjectId?: string;
 }
 
-// async function baixarAnexo(tarefaId: string, nomeArquivo: string) {
-//   try {
-//     const res = await authFetch(
-//       `http://localhost:8000/tarefa/${tarefaId}/anexos/${encodeURIComponent(
-//         nomeArquivo
-//       )}`
-//     );
-//     if (!res.ok) throw new Error("Erro ao baixar anexo");
+async function baixarAnexo(tarefaId: string, nomeArquivo: string) {
+  try {
+    const res = await authFetch(
+      `http://localhost:8000/tarefa/${tarefaId}/anexos/${encodeURIComponent(
+        nomeArquivo
+      )}`
+    );
+    if (!res.ok) throw new Error("Erro ao baixar anexo");
 
-//     const blob = await res.blob();
-//     const url = window.URL.createObjectURL(blob);
-//     const a = document.createElement("a");
-//     a.href = url;
-//     a.download = nomeArquivo;
-//     a.click();
-//     window.URL.revokeObjectURL(url);
-//   } catch (err) {
-//     console.error(err);
-//     alert("Falha ao baixar o anexo.");
-//   }
-// }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nomeArquivo;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+    alert("Falha ao baixar o anexo.");
+  }
+}
 
 const AvatarPill: React.FC<{
   responsavel: ResponsavelTarefa;
@@ -116,8 +115,8 @@ const MultiSelectResponsaveis: React.FC<{
             key={r.usuId}
             responsavel={r}
             onRemove={(e) => {
-              e?.stopPropagation(); 
-              handleToggleUsuario(r as Usuario); 
+              e?.stopPropagation();
+              handleToggleUsuario(r as Usuario);
             }}
           />
         ))}
@@ -286,13 +285,20 @@ export default function FormularioTarefa({
               Anexos ({totalAnexosCount}):
             </h4>
             <ul className="space-y-3">
+              {/* --- INÍCIO DA CORREÇÃO --- */}
               {anexosExistentes?.map((anexo) => {
-                const anexoUrl = `http://localhost:8000/anexos/tarefa/${tarefa.tarId}/${anexo}`;
-                console.log(anexo);
-                const isImage = /\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(anexo);
+                const nomeArquivo = anexo.arquivoNome;
+                const anexoUrl = `http://localhost:8000/anexos/tarefa/${
+                  tarefa.tarId
+                }/${encodeURIComponent(nomeArquivo)}`;
+
+                const isImage = /\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(
+                  nomeArquivo
+                );
+
                 return (
                   <li
-                    key={`existente-${anexo}`}
+                    key={`existente-${nomeArquivo}`}
                     className="text-sm gap-1"
                   >
                     <div className="flex items-start justify-between">
@@ -302,16 +308,17 @@ export default function FormularioTarefa({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 text-blue-600 hover:underline"
-                          title={`Abrir ${anexo} em nova aba`}
+                          title={`Abrir ${nomeArquivo} em nova aba`}
                         >
                           {getFileIcon(anexoUrl || "")}
-                          <span className="truncate">{anexo}</span>
+                          {/* Exibe o nome do arquivo corretamente */}
+                          <span className="truncate">{nomeArquivo}</span>
                         </a>
                         {isImage && (
                           <div className="mt-1">
                             <img
                               src={anexoUrl}
-                              alt={`Preview de ${anexo}`}
+                              alt={`Preview de ${nomeArquivo}`}
                               className="max-w-full h-auto max-h-32 rounded-md border object-contain cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() =>
                                 onVisualizaImagem && onVisualizaImagem(anexoUrl)
@@ -324,7 +331,7 @@ export default function FormularioTarefa({
                         <button
                           type="button"
                           onClick={() =>
-                            handleRemoverAnexoExistente(anexo.arquivoNome)
+                            handleRemoverAnexoExistente(nomeArquivo)
                           }
                           className="text-red-500 hover:text-red-700 ml-2 flex-shrink-0"
                         >
@@ -335,13 +342,17 @@ export default function FormularioTarefa({
                   </li>
                 );
               })}
+              {/* --- FIM DA CORREÇÃO --- */}
+
               {anexos.map((file, index) => (
                 <li
                   key={`novo-${file.name}-${index}`}
                   className="flex items-center justify-between text-sm"
                 >
                   <div className="flex items-center gap-2 truncate pr-2">
-                    {getFileIcon(file.type || file.name.split(".").pop() || "")}
+                    {getFileIcon(
+                      file.type || file.name.split(".").pop() || ""
+                    )}
                     <span className="truncate" title={file.name}>
                       {file.name}
                     </span>
@@ -402,7 +413,9 @@ export default function FormularioTarefa({
                 ) : (
                   <>
                     <option value="Pendente">Pendente</option>
-                    <option value="Em Desenvolvimento">Em Desenvolvimento</option>
+                    <option value="Em Desenvolvimento">
+                      Em Desenvolvimento
+                    </option>
                     <option value="Concluída">Concluída</option>
                   </>
                 )}

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+// 1. ADICIONADO: useLocation para ler o estado vindo da rota
+import { useLocation } from "react-router-dom"; 
 import ItemHistoricoTarefa from "./ItemHistoricoTarefa";
 import { getErrorMessage } from "@/utils/errorUtils";
 import { authFetch } from "@/utils/api";
@@ -33,34 +35,32 @@ interface ProjetoDTO {
 
 type CategoriaModificacao = "CRIACAO" | "EDICAO" | "EXCLUSAO";
 
-// 2. Comentário para silenciar o erro "no-empty"
 interface AuditoriaResponseDto {
   projetoId?: string;
   tarefaId?: string;
-  tarefaNome?: string; // 2. Comentário para silenciar o erro "no-empty"
+  tarefaNome?: string;
   responsavel?: {
     usuId?: string;
     usuNome?: string;
     usuEmail?: string;
-    id?: string;            // 2. Comentário para silenciar o erro "no-empty"
-    email?: string;         // 2. Comentário para silenciar o erro "no-empty"
-    nome?: string;          // 2. Comentário para silenciar o erro "no-empty"
-    emailResponsavel?: string; // 2. Comentário para silenciar o erro "no-empty"
+    id?: string;
+    email?: string;
+    nome?: string;
+    emailResponsavel?: string;
   };
   modificacao?: {
     categoria?: CategoriaModificacao;
     mensagem?: string;
-    modificacao?: string;   // 2. Comentário para silenciar o erro "no-empty"
-    tarefaId?: string;      // 2. Comentário para silenciar o erro "no-empty"
-    tarefaNome?: string;    // 2. Comentário para silenciar o erro "no-empty"
+    modificacao?: string;
+    tarefaId?: string;
+    tarefaNome?: string;
   };
   dataAlteracao?: string;
   horaAlteracao?: string;
   traceId?: string;
-  categoria?: CategoriaModificacao; // 2. Comentário para silenciar o erro "no-empty"
+  categoria?: CategoriaModificacao;
 }
 
-// 2. Comentário para silenciar o erro "no-empty"
 function mapCategoriaToAcao(c: CategoriaModificacao): AcaoHistorico {
   switch (c) {
     case "CRIACAO":
@@ -82,7 +82,6 @@ function mapAuditoriaParaHistorico(data: AuditoriaResponseDto[], nameMap: Record
 
   for (const ev of data) {
     const modificacaoTxt = String(ev.modificacao?.modificacao ?? '');
-    // 2. Comentário para silenciar o erro "no-empty"
     if (/Requisição\s+GET/i.test(modificacaoTxt)) continue;
 
     const rawTarId = ev.tarefaId ?? ev.modificacao?.tarefaId ?? null;
@@ -93,7 +92,6 @@ function mapAuditoriaParaHistorico(data: AuditoriaResponseDto[], nameMap: Record
     const tarId = rawTarId ? String(rawTarId) : `nome:${String(rawTarNome)}`;
     const tarNome = String(rawTarNome ?? nameMap[String(rawTarId)] ?? `Tarefa ${tarId}`);
 
-    // 2. Comentário para silenciar o erro "no-empty"
     const r = ev.responsavel || {};
     
     const usuId = String(r.usuId ?? r.id ?? "desconhecido");
@@ -131,7 +129,6 @@ function mapAuditoriaParaHistorico(data: AuditoriaResponseDto[], nameMap: Record
     }
   }
 
-  // 2. Comentário para silenciar o erro "no-empty"
   const historico = Array.from(byTask.values())
     .sort((a,b) => {
         const ta = a.alteracoes[0]?.altDataHoraRaw?.data || "";
@@ -148,6 +145,10 @@ export default function ListaHistorico() {
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
   const [isLoading, setIsLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+
+  // 2. RECUPERA O ID DO PROJETO SELECIONADO
+  const location = useLocation();
+  const selectedProjectId = location.state?.id as string | undefined;
 
   async function fetchAuditoriaPorProjeto(projetoId: string): Promise<AuditoriaResponseDto[]> {
     try {
@@ -168,12 +169,10 @@ export default function ListaHistorico() {
   async function fetchProjetosDoUsuario(): Promise<ProjetoDTO[]> {
     try {
       const res = await authFetch("/projeto/meus-projetos");
-      
       if (!res.ok) {
         console.error("Erro ao buscar projetos do usuário:", res.statusText);
         return [];
       }
-
       const dados = await res.json();
       return dados as ProjetoDTO[];
     } catch (error) {
@@ -191,7 +190,7 @@ export default function ListaHistorico() {
         const json = await res.json();
         map[id] = json.titulo || json.nome || json.tarefaNome || String(id);
       } catch {
-        // 2. Comentário para silenciar o erro "no-empty"
+        // ...
       }
     }));
     return map;
@@ -203,14 +202,26 @@ export default function ListaHistorico() {
       setErro(null);
 
       try {
-        const projetos = await fetchProjetosDoUsuario();
-        if (projetos.length === 0) {
-          setHistorico([]);
-          setResponsaveis([]);
-          return;
+        let eventos: AuditoriaResponseDto[] = [];
+
+        // 3. ALTERADA LÓGICA DE BUSCA
+        if (selectedProjectId) {
+          // Se tiver um ID selecionado na navegação, busca só dele
+          console.log("Buscando histórico apenas para o projeto:", selectedProjectId);
+          eventos = await fetchAuditoriaPorProjeto(selectedProjectId);
+        } else {
+          // Se não tiver (ex: acessou rota direto), busca de todos (Comportamento antigo)
+          console.log("Nenhum projeto selecionado, buscando de todos.");
+          const projetos = await fetchProjetosDoUsuario();
+          if (projetos.length === 0) {
+            setHistorico([]);
+            setResponsaveis([]);
+            setIsLoading(false);
+            return;
+          }
+          const eventosList = await Promise.all(projetos.map(p => fetchAuditoriaPorProjeto(p.projId)));
+          eventos = eventosList.flat();
         }
-        const eventosList = await Promise.all(projetos.map(p => fetchAuditoriaPorProjeto(p.projId)));
-        const eventos = eventosList.flat();
         
         const idsParaBuscar = Array.from(new Set(
           eventos
@@ -220,7 +231,6 @@ export default function ListaHistorico() {
 
         const nameMap = idsParaBuscar.length ? await fetchTaskNames(idsParaBuscar) : {};
         
-        // 2. Comentário para silenciar o erro "no-empty"
         const { historico, responsaveis } = mapAuditoriaParaHistorico(eventos, nameMap);
         
         setHistorico(historico);
@@ -237,7 +247,9 @@ export default function ListaHistorico() {
     const onFocus = () => carregar();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, []);
+    
+    // 4. IMPORTANTE: Adicionado selectedProjectId nas dependências
+  }, [selectedProjectId]); 
 
   const historicoFiltrado = historico
     .map(tarefa => {
@@ -277,7 +289,9 @@ export default function ListaHistorico() {
           Nenhum histórico de alterações
         </h2>
         <p className="text-slate-500 mt-1 pb-2">
-          As alterações nas tarefas aparecerão aqui assim que forem feitas.
+          {selectedProjectId 
+            ? "Nenhuma alteração encontrada neste projeto." 
+            : "As alterações nas tarefas aparecerão aqui assim que forem feitas."}
         </p>
       </div>
     );
@@ -292,7 +306,9 @@ export default function ListaHistorico() {
               Histórico de Alterações
             </h1>
             <p className="text-gray-500 mt-1">
-              Veja todas as mudanças feitas nas tarefas em seus projetos.
+              {selectedProjectId 
+               ? "Veja as mudanças feitas neste projeto." 
+               : "Veja todas as mudanças feitas nas tarefas em seus projetos."}
             </p>
           </div>
 

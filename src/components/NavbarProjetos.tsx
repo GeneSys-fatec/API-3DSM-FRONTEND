@@ -2,22 +2,22 @@ import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import SearchBar from "./common/SearchBar";
 
-
 type NavbarProjetosProps = {
   termo: string;
   setTermo: (t: string) => void;
   idsResponsaveis: string[];
   setIdsResponsaveis: (ids: string[]) => void;
   usuariosDoProjeto: { id: string; name: string }[];
+  selectedProjectId: string | null; // <--- NOVO: Recebe o ID do projeto selecionado
 };
-
 
 export default function NavbarProjetos({
   termo,
   setTermo,
   idsResponsaveis,
   setIdsResponsaveis,
-  usuariosDoProjeto
+  usuariosDoProjeto,
+  selectedProjectId, // <--- NOVO
 }: NavbarProjetosProps) {
   
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -54,6 +54,22 @@ export default function NavbarProjetos({
               <NavLink to="/dashboard" className={getNavLinkClass}>
                 Estatísticas
               </NavLink>
+              
+              {/* ATUALIZADO: Passa o ID via state */}
+              <NavLink 
+                to="/historico" 
+                state={{ id: selectedProjectId }} // Envia o ID para a página de histórico
+                className={({ isActive }) => 
+                  // Adicionamos lógica extra para desativar visualmente se não tiver projeto
+                   `${getNavLinkClass({ isActive })} ${!selectedProjectId ? 'opacity-50 pointer-events-none' : ''}`
+                }
+                onClick={(e) => {
+                  if (!selectedProjectId) e.preventDefault();
+                }}
+              >
+                Histórico de Alterações
+              </NavLink>
+
             </nav>
             <div className="flex justify-end items-center gap-2">
               

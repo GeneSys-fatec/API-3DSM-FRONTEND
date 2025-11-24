@@ -10,7 +10,10 @@ import NavbarProjetos from "../components/NavbarProjetos";
 export default function LayoutPrincipal() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModalProjetosOpen, setIsModalProjetosOpen] = useState(false);
+  
+  // O estado que guarda o ID do projeto selecionado
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  
   const [targetEquipeId, setTargetEquipeId] = useState<string | null>(null);
 
   const [termoBusca, setTermoBusca] = useState("");
@@ -20,7 +23,6 @@ export default function LayoutPrincipal() {
 
   const navigate = useNavigate();
   const location = useLocation();
-
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -85,6 +87,8 @@ export default function LayoutPrincipal() {
               idsResponsaveis={filtrosResponsaveis}
               setIdsResponsaveis={setFiltrosResponsaveis}
               usuariosDoProjeto={usuariosDoProjeto}
+              // ADICIONADO: Passando o ID do projeto para a Navbar
+              selectedProjectId={selectedProjectId} 
             />
           )}
 
